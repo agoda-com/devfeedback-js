@@ -1,0 +1,91 @@
+stages:
+  - test
+  - build
+  - release
+
+include:
+  - project: devops/ci-templates
+    ref: master
+    file:
+      - /templates/Node/Node.gitlab-ci.yml
+  - project: 'full-stack/templates/ci-template'
+    ref: tags/v3
+    file:
+      - semver/build.yml
+  - project: 'full-stack/templates/agoda-npm-generator'
+    ref: tags/v0
+    file:
+      - '.ci-template.yml'
+
+variables:
+  NODE_IMAGE: reg-hk.agodadev.io/dockerhub/library/node:lts
+
+.node-cache:
+  cache:
+    key:
+      files: ['yarn.lock']
+      prefix: yarn-${CI_JOB_NAME}
+    paths:
+      - node_modules/
+
+.rule-mr:
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+
+.rule-mr-manual:
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
+      when: manual
+
+unit-test:
+  stage: test
+  extends: [.node-cache, .rule-mr]
+  image: ${NODE_IMAGE}
+  script:
+    - yarn install --frozen-lockfile
+    - yarn test
+
+prettier:
+  stage: test
+  extends: [.node-cache, .rule-mr]
+  image: ${NODE_IMAGE}
+  script:
+    - yarn install --frozen-lockfile
+    - yarn prettier . --check
+
+lint:
+  stage: test
+  extends: [.node-cache, .rule-mr]
+  image: ${NODE_IMAGE}
+  script:
+    - yarn install --frozen-lockfile
+    - yarn lint
+
+build:
+  stage: build
+  extends: [.node-cache, .rule-mr]
+  image: ${NODE_IMAGE}
+  script:
+    - yarn install --frozen-lockfile
+    - yarn build
+    - yarn build-cjs
+    - yarn build-esm
+  artifacts:
+    paths:
+      - lib/**
+
+release-beta:
+  extends: [.semver-prerelease, .npm-publish, .node-cache]
+  needs:
+    - !reference [.semver-prerelease, needs]
+    - build
+  allow_failure: true
+  variables:
+    # This overrides $NEW_VERSION from semver-release template
+    NEW_VERSION: '${NEW_VERSION}-beta.${CI_PIPELINE_IID}'
+
+release:
+  extends: [.semver-release, .npm-publish, .node-cache]
+  needs:
+    - !reference [.semver-prerelease, needs]
+    - build
