@@ -69,7 +69,15 @@ export default defineConfig({
 });
 ```
 
-See example here: [cronos-project-template !75](https://gitlab.agodadev.io/full-stack/templates/cronos-project-template/-/merge_requests/75/)
+See example here: [cronos-project-template !75](https://gitlab.agodadev.io/full-stack/templates/cronos-project-template/-/merge_requests/75/) for Webpack and [capybara !181](https://gitlab.agodadev.io/full-stack/crossplatform-workgroup/capybara/-/merge_requests/181/) for Vite.
+
+In case of any errors, the plugin will neither break your build nor print any scary messages in the console. Instead, the error messages will go to a separate file `devfeedback.log`.
+So, you might need to add the file to your `.gitignore` file to prevent people from accidentally commit it.
+
+```plaintext
+# @agoda/devfeedback error log file
+devfeedback.log
+```
 
 #### Advanced usage
 
@@ -88,6 +96,18 @@ viteBuildStatsPlugin('production');
 ```
 
 See examples on [agoda-com-spa-mobile !14885](https://gitlab.agodadev.io/full-stack/monoliths/agoda-com-spa-mobile/-/merge_requests/14885) and [accom-web !4698](https://gitlab.agodadev.io/full-stack/accommodation/accom-web/-/merge_requests/4698).
+
+#### How to test
+
+To test that you have set up the plugin correctly and messages are handled by the server, you can run the following query in Superset:
+
+```sql
+SELECT *
+FROM messaging.vitebuildmessage
+WHERE projectName = '%your-project-name%' AND userName = '%your-user-name%'
+```
+
+_\* remember that there is a delay between the time you run the build and the time the data is available in Hadoop_
 
 ## Notes
 
