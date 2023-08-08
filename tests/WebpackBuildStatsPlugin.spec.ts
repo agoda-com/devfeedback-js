@@ -1,15 +1,15 @@
-import type { CommonBuildData, WebpackBuildData } from '../src/types';
+import type { CommonMetadata, WebpackBuildData } from '../src/types';
 import { WebpackBuildStatsPlugin } from '../src/WebpackBuildStatsPlugin';
-import { getCommonBuildData, sendBuildData } from '../src/common';
+import { getCommonMetadata, sendBuildData } from '../src/common';
 import type { Compiler } from 'webpack';
 
 jest.mock('../src/common', () => ({
-  getCommonBuildData: jest.fn(),
+  getCommonMetadata: jest.fn(),
   sendBuildData: jest.fn(),
 }));
 
-const mockedGetCommonBuildData = getCommonBuildData as jest.MockedFunction<
-  typeof getCommonBuildData
+const mockedGetCommonMetadata = getCommonMetadata as jest.MockedFunction<
+  typeof getCommonMetadata
 >;
 const mockedSendBuildData = sendBuildData as jest.MockedFunction<typeof sendBuildData>;
 
@@ -36,7 +36,7 @@ describe('WebpackBuildStatsPlugin', () => {
 
   it('should send the correct data', async () => {
     // mock common utils
-    mockedGetCommonBuildData.mockReturnValue({} as CommonBuildData);
+    mockedGetCommonMetadata.mockReturnValue({} as CommonMetadata);
     mockedSendBuildData.mockReturnValue(Promise.resolve());
 
     // mock stats
@@ -58,7 +58,7 @@ describe('WebpackBuildStatsPlugin', () => {
     const callback = mockedCompiler.hooks.done.tap.mock.calls[0][1];
     await callback(mockedStats as unknown as import('webpack').Stats);
 
-    expect(mockedGetCommonBuildData).toBeCalledWith(123, 'my custom identifier');
+    expect(mockedGetCommonMetadata).toBeCalledWith(123, 'my custom identifier');
     expect(mockedSendBuildData).toBeCalledWith(expect.objectContaining(expected));
   });
 
@@ -89,6 +89,6 @@ describe('WebpackBuildStatsPlugin', () => {
     const callback = mockedCompiler.hooks.done.tap.mock.calls[0][1];
     await callback(mockedStats as unknown as import('webpack').Stats);
 
-    expect(mockedGetCommonBuildData).toBeCalledWith(123, 'default_value');
+    expect(mockedGetCommonMetadata).toBeCalledWith(123, 'default_value');
   });
 });

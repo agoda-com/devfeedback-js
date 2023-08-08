@@ -1,6 +1,6 @@
 import type { ViteBuildData } from './types';
 import { type Plugin } from 'vite';
-import { getCommonBuildData, sendBuildData } from './common';
+import { getCommonMetadata, sendBuildData } from './common';
 
 export function viteBuildStatsPlugin(
   customIdentifier: string | undefined = process.env.npm_lifecycle_event,
@@ -20,7 +20,7 @@ export function viteBuildStatsPlugin(
     },
     closeBundle: async function () {
       const buildStats: ViteBuildData = {
-        ...getCommonBuildData(buildEnd - buildStart, customIdentifier),
+        ...getCommonMetadata(buildEnd - buildStart, customIdentifier),
         type: 'vite',
         viteVersion: rollupVersion ?? null,
       };

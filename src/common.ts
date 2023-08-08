@@ -1,4 +1,9 @@
-import type { CommonBuildData, ViteBuildData, WebpackBuildData } from './types';
+import type {
+  CommonMetadata,
+  ViteBuildData,
+  WebpackBuildData,
+  VitestTestData,
+} from './types';
 import { v1 as uuidv1 } from 'uuid';
 import os from 'os';
 import fs from 'fs';
@@ -13,10 +18,10 @@ const runGitCommand = (args: string[]): string | undefined => {
   return result;
 };
 
-export const getCommonBuildData = (
+export const getCommonMetadata = (
   timeTaken: number,
   customIdentifier: string = process.env.npm_lifecycle_event ?? UNKNOWN_VALUE,
-): CommonBuildData => {
+): CommonMetadata => {
   const repoUrl = runGitCommand(['config', '--get', 'remote.origin.url']);
   let repoName = repoUrl
     ? repoUrl.substring(repoUrl.lastIndexOf('/') + 1)
@@ -54,23 +59,48 @@ export const getCommonBuildData = (
 const ENDPOINT_FROM_TYPE = {
   webpack: 'http://devlocalmetrics.tooling.hk.agoda.is/webpack',
   vite: 'http://devlocalmetrics.tooling.hk.agoda.is/vite',
+  vitest: 'http://devlocalmetrics.tooling.hk.agoda.is/vitest',
 };
 
 const LOG_FILE = 'devfeedback.log';
+
+const sendData = async (endpoint: string, data: CommonMetadata): Promise<boolean> => {
+  const [_, error] = await safelyTry(() => axios.post(endpoint, data));
+  if (error) {
+    fs.writeFileSync(LOG_FILE, JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    return false;
+  }
+  return true;
+};
 
 export const sendBuildData = async (buildStats: WebpackBuildData | ViteBuildData) => {
   const endpoint = ENDPOINT_FROM_TYPE[buildStats.type];
 
   console.log(`Your build time was ${buildStats.timeTaken.toFixed(2)}ms.`);
 
-  const [_, error] = await safelyTry(() => axios.post(endpoint, buildStats));
-  if (error) {
+  const sent = await sendData(endpoint, buildStats);
+  if (!sent) {
     console.log(
       `Your build stats has not been sent. See logs in ${LOG_FILE} for more info.`,
     );
-    fs.writeFileSync(LOG_FILE, JSON.stringify(error, Object.getOwnPropertyNames(error)));
     return;
   }
 
   console.log(`Your build stats has successfully been sent.`);
+};
+
+export const sendTestData = async (testData: VitestTestData) => {
+  const endpoint = ENDPOINT_FROM_TYPE[testData.type];
+
+  console.log(`Your test time was ${testData.timeTaken.toFixed(2)}ms.`);
+
+  const sent = await sendData(endpoint, testData);
+  if (!sent) {
+    console.log(
+      `Your test data has not been sent. See logs in ${LOG_FILE} for more info.`,
+    );
+    return;
+  }
+
+  console.log(`Your test data has successfully been sent.`);
 };

@@ -1,9 +1,9 @@
-import { getCommonBuildData, sendBuildData } from '../src/common';
+import { getCommonMetadata, sendBuildData } from '../src/common';
 import os from 'os';
 import child_process from 'child_process';
 import uuid from 'uuid';
 import fs from 'fs';
-import type { CommonBuildData } from '../src/types';
+import type { CommonMetadata } from '../src/types';
 import axios from 'axios';
 
 jest.mock('os', () => ({
@@ -42,8 +42,8 @@ describe('common', () => {
     jest.resetAllMocks();
   });
 
-  describe('getCommonBuildData', () => {
-    const expected: CommonBuildData = {
+  describe('getCommonMetadata', () => {
+    const expected: CommonMetadata = {
       id: '250ce4f8-1f0a-11ee-be56-0242ac120002',
       userName: 'root',
       cpuCount: 1,
@@ -114,7 +114,7 @@ describe('common', () => {
       // mock current datetime
       jest.useFakeTimers().setSystemTime(new Date('2023-07-09T07:49:05.705Z'));
 
-      const result = getCommonBuildData(
+      const result = getCommonMetadata(
         156535,
         'Flights V2 App with Initial Load - production build',
       );
@@ -149,7 +149,7 @@ describe('common', () => {
       // mock current datetime
       jest.useFakeTimers().setSystemTime(new Date('2023-07-09T07:49:05.705Z'));
 
-      const result = getCommonBuildData(156535);
+      const result = getCommonMetadata(156535);
       expect(result).toEqual(
         expect.objectContaining({
           userName: '<unknown>',
