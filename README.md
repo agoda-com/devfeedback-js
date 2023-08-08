@@ -37,6 +37,18 @@ Follow this [instruction](BUILD_TIME.md) to get started.
 This package also supports collecting the test data of projects that are using Vitest (0.x).  
 Follow this [instruction](TEST_DATA.md) to get started.
 
+## How to test
+
+To test that you have set up the plugin correctly and messages are handled by the server, you can run the following query in Superset:
+
+```sql
+SELECT *
+FROM messaging.vitebuildmessage
+WHERE projectName = '%your-project-name%' AND userName = '%your-user-name%'
+```
+
+\* _remember that there is a delay between the time you run the build and the time the data is available in Hadoop_
+
 ## Other
 
 - [Dashboard](https://superset.agodadev.io/superset/dashboard/439/)
