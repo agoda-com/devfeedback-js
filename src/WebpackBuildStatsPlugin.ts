@@ -1,4 +1,4 @@
-import { getCommonBuildData, sendBuildData } from './common';
+import { getCommonMetadata, sendBuildData } from './common';
 import type { WebpackBuildData } from './types';
 import type { Compiler, Stats, StatsCompilation } from 'webpack';
 
@@ -13,7 +13,7 @@ export class WebpackBuildStatsPlugin {
       const jsonStats: StatsCompilation = stats.toJson();
 
       const buildStats: WebpackBuildData = {
-        ...getCommonBuildData(jsonStats.time ?? -1, this.customIdentifier),
+        ...getCommonMetadata(jsonStats.time ?? -1, this.customIdentifier),
         type: 'webpack',
         compilationHash: jsonStats.hash ?? null,
         webpackVersion: jsonStats.version ?? null,

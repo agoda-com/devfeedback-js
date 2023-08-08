@@ -1,14 +1,14 @@
-import type { CommonBuildData, ViteBuildData } from '../src/types';
+import type { CommonMetadata, ViteBuildData } from '../src/types';
 import { viteBuildStatsPlugin } from '../src/viteBuildStatsPlugin';
-import { getCommonBuildData, sendBuildData } from '../src/common';
+import { getCommonMetadata, sendBuildData } from '../src/common';
 
 jest.mock('../src/common', () => ({
-  getCommonBuildData: jest.fn(),
+  getCommonMetadata: jest.fn(),
   sendBuildData: jest.fn(),
 }));
 
-const mockedGetCommonBuildData = getCommonBuildData as jest.MockedFunction<
-  typeof getCommonBuildData
+const mockedGetCommonMetadata = getCommonMetadata as jest.MockedFunction<
+  typeof getCommonMetadata
 >;
 const mockedSendBuildData = sendBuildData as jest.MockedFunction<typeof sendBuildData>;
 
@@ -29,7 +29,7 @@ describe('viteBuildStatsPlugin', () => {
     } as unknown as typeof Date;
 
     // mock common utils
-    mockedGetCommonBuildData.mockReturnValue({} as CommonBuildData);
+    mockedGetCommonMetadata.mockReturnValue({} as CommonMetadata);
     mockedSendBuildData.mockReturnValue(Promise.resolve());
 
     const plugin = viteBuildStatsPlugin('my custom identifier');
@@ -37,7 +37,7 @@ describe('viteBuildStatsPlugin', () => {
     (plugin.buildEnd as () => void)();
     await (plugin.closeBundle as () => Promise<void>)();
 
-    expect(mockedGetCommonBuildData).toBeCalledWith(100, 'my custom identifier');
+    expect(mockedGetCommonMetadata).toBeCalledWith(100, 'my custom identifier');
     expect(mockedSendBuildData).toBeCalledWith(expect.objectContaining(expected));
   });
 
@@ -48,7 +48,7 @@ describe('viteBuildStatsPlugin', () => {
     } as unknown as typeof Date;
 
     // mock common utils
-    mockedGetCommonBuildData.mockReturnValue({} as CommonBuildData);
+    mockedGetCommonMetadata.mockReturnValue({} as CommonMetadata);
     mockedSendBuildData.mockReturnValue(Promise.resolve());
 
     // mock process object
@@ -63,7 +63,7 @@ describe('viteBuildStatsPlugin', () => {
     (plugin.buildEnd as () => void)();
     await (plugin.closeBundle as () => Promise<void>)();
 
-    expect(mockedGetCommonBuildData).toBeCalledWith(100, 'default_value');
+    expect(mockedGetCommonMetadata).toBeCalledWith(100, 'default_value');
     expect(mockedSendBuildData).toBeCalledWith(expect.objectContaining(expected));
   });
 });
