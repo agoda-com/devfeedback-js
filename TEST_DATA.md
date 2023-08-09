@@ -32,6 +32,28 @@ or if you are running tests using command line, you might need to add `--reporte
 yarn vitest --reporter ./node_modules/@agoda/devfeedback/lib/esm/VitestTestDataPlugin run
 ```
 
+##### IntelliJ IDE (WebStorm)
+
+To support IntelliJ IDE such as WebStorm that some of your developers might be using, you'll need to add test configuration template to your project.
+
+1. Go to `Run` -> `Edit Configurations...`
+2. Click `Edit configuration templates...`
+3. Click `Vitest`
+
+<img
+  src="images/vitest_run_configuration_templates.png"
+  alt="Vitest Run Configuration Templates Window" width="800" />
+
+- Tick `Store as project file`
+- Fill `Configuration file` with your `vitest.config.js` file
+- Add `--reporter ./node_modules/@agoda/devfeedback/lib/esm/VitestTestDataPlugin` to `Vitest options`
+- Make sure it applies on `All tests`
+- Click `OK` and this will create a new file in `.run` folder in your project directory
+
+See example here: [supply-iam !66](https://gitlab.agodadev.io/full-stack/ycs/supply-iam/-/merge_requests/66)
+
+_Please note that the Vitest template will apply only to new Vitest run configurations, you might need to delete the old ones to run tests with the new template._
+
 ### Advanced usage
 
 As same as build time, test data collection also sends the command that you used to run the build like `yarn test` to be the custom identifier which should work in most cases in order to help you distinguish between different test configurations.
