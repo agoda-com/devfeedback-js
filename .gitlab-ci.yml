@@ -48,6 +48,7 @@ unit-test:
 prettier:
   stage: test
   extends: [.node-cache, .rule-mr]
+  needs: []
   image: ${NODE_IMAGE}
   script:
     - yarn install --frozen-lockfile
@@ -56,6 +57,7 @@ prettier:
 lint:
   stage: test
   extends: [.node-cache, .rule-mr]
+  needs: []
   image: ${NODE_IMAGE}
   script:
     - yarn install --frozen-lockfile
@@ -64,6 +66,7 @@ lint:
 build:
   stage: build
   extends: [.node-cache, .rule-mr]
+  needs: []
   image: ${NODE_IMAGE}
   script:
     - yarn install --frozen-lockfile
