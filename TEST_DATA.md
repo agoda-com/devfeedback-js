@@ -63,9 +63,3 @@ However, if you would like to define your own identifier, you can do so by passi
 ```javascript
 VitestTestDataPlugin(testOnlyPartA ? 'test-only-part-a' : 'test-everything');
 ```
-
-## Note
-
-Please note that the test collection doesn't work with IntelliJ IDEs because it will override your config file and use its own reporter in the command line
-
-For now, it works only when you run the test in the command line directly like `yarn vitest`.
