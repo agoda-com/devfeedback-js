@@ -5,7 +5,6 @@ import type { VitestTestFile, VitestTestCase, VitestTestData } from './types';
 import safelyTry from 'safely-try';
 
 export default class VitestTestDataPlugin implements Reporter {
-  private start = 0;
   private ctx!: Vitest;
   private readonly customIdentifier: string | undefined;
 
@@ -15,7 +14,6 @@ export default class VitestTestDataPlugin implements Reporter {
 
   async onInit(ctx: Vitest) {
     this.ctx = ctx;
-    this.start = Date.now();
   }
 
   private getVitestVersion() {
@@ -55,7 +53,6 @@ export default class VitestTestDataPlugin implements Reporter {
   }
 
   async onFinished(files = this.ctx.state.getFiles()) {
-    const timeTaken = Date.now() - this.start;
     const config = this.ctx.config;
 
     const testfiles: VitestTestFile[] = [];
@@ -76,6 +73,7 @@ export default class VitestTestDataPlugin implements Reporter {
       testcases.push(...this.iterateVitestTasks(file.name, '', file.tasks));
     }
 
+    const timeTaken = files.reduce((acc, file) => acc + (file.result?.duration ?? 0), 0);
     const testData: VitestTestData = {
       ...getCommonMetadata(timeTaken, this.customIdentifier),
       type: 'vitest',
