@@ -110,12 +110,10 @@ describe('VitestTestDataPlugin', () => {
     mockedSendTestData.mockReturnValue(Promise.resolve());
 
     const plugin = new VitestTestDataPlugin('my custom identifier');
-    Date.now = jest.fn(() => 0);
     plugin.onInit(mockedVitest);
-    Date.now = jest.fn(() => 100);
     plugin.onFinished();
 
-    expect(mockedGetCommonMetadata).toBeCalledWith(100, 'my custom identifier');
+    expect(mockedGetCommonMetadata).toBeCalledWith(2, 'my custom identifier');
     expect(mockedSendTestData).toBeCalledWith(expect.objectContaining(expected));
   });
 
@@ -137,12 +135,10 @@ describe('VitestTestDataPlugin', () => {
     mockedSendTestData.mockReturnValue(Promise.resolve());
 
     const plugin = new VitestTestDataPlugin();
-    Date.now = jest.fn(() => 0);
     plugin.onInit(mockedVitest);
-    Date.now = jest.fn(() => 100);
     plugin.onFinished();
 
-    expect(mockedGetCommonMetadata).toBeCalledWith(100, 'default_value');
+    expect(mockedGetCommonMetadata).toBeCalledWith(2, 'default_value');
 
     const newExpected = { ...expected, customIdentifier: 'default_value' };
     expect(mockedSendTestData).toBeCalledWith(expect.objectContaining(expected));

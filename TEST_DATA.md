@@ -1,6 +1,6 @@
 # Test Data
 
-Requires `@agoda/devfeedback` version 1.1.0 or later.
+Requires `@agoda/devfeedback` version 1.1.1 or later.
 
 ## Usage
 
