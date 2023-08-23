@@ -47,6 +47,10 @@ FROM messaging.vitebuildmessage
 WHERE projectName = '%your-project-name%' AND userName = '%your-user-name%'
 ```
 
+For compilation time, Webpack data goes to `messaging.webpackstatsmessage` and Vite data goes to `messaging.vitebuildmessage`.
+
+For test data, Vitest data goes to `messaging.vitesttestrunmessage`, `messaging.vitesttestfilemessage`, and `messaging.vitesttestcasemessage` for test run, test file, and test case respectively.
+
 \* _remember that there is a delay between the time you run the build and the time the data is available in Hadoop_
 
 ## Other
