@@ -162,6 +162,67 @@ describe('common', () => {
         }),
       );
     });
+
+    it('should user "GITLAB_USER_LOGIN" environment variable as username if defined', () => {
+      // mock uuid v1
+      mockedUuid.v1.mockReturnValue('250ce4f8-1f0a-11ee-be56-0242ac120002');
+
+      // mock os
+      mockedOs.hostname.mockReturnValue('hostname');
+      mockedOs.userInfo.mockReturnValue({ username: 'root' } as os.UserInfo<never>);
+      mockedOs.type.mockReturnValue('Linux');
+      mockedOs.release.mockReturnValue('5.4.0-144-generic');
+      mockedOs.cpus.mockReturnValue([
+        {
+          model: 'Intel(R) Core(TM) i7 CPU 860 @ 2.80GHz',
+          speed: 2926,
+          times: {
+            user: 252020,
+            nice: 0,
+            sys: 30340,
+            idle: 1070356870,
+            irq: 0,
+          },
+        },
+      ]);
+      mockedOs.totalmem.mockReturnValue(15748743168);
+
+      // mock child_process object
+      mockedChildProcess.spawnSync.mockReturnValueOnce({
+        stdout: Buffer.from(
+          'https://gitlab.agodadev.io/full-stack/monoliths/agoda-com-spa-mobile',
+        ),
+      } as child_process.SpawnSyncReturns<Buffer>);
+      mockedChildProcess.spawnSync.mockReturnValueOnce({
+        stdout: Buffer.from('master'),
+      } as child_process.SpawnSyncReturns<Buffer>);
+      mockedChildProcess.spawnSync.mockReturnValueOnce({
+        stdout: Buffer.from('959a2962d61c3b064610bb83510ba7be3d4f500c'),
+      } as child_process.SpawnSyncReturns<Buffer>);
+
+      // mock process object
+      global.process = {
+        version: 'v14.18.2',
+        versions: {
+          v8: '8.4.371.23-node.85',
+        },
+        env: {
+          GITLAB_USER_LOGIN: 'mock-gitlab-user',
+        },
+      } as unknown as typeof process;
+
+      // mock current datetime
+      jest.useFakeTimers().setSystemTime(new Date('2023-07-09T07:49:05.705Z'));
+
+      const result = getCommonMetadata(
+        156535,
+        'Flights V2 App with Initial Load - production build',
+      );
+      expect(result).toEqual({
+        ...expected,
+        userName: 'mock-gitlab-user',
+      });
+    });
   });
 
   describe('sendBuildData', () => {

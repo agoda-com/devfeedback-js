@@ -30,11 +30,12 @@ export const getCommonMetadata = (
     ? repoName.substring(0, repoName.lastIndexOf('.'))
     : repoName;
 
-  const [username, _] = safelyTry(() => os.userInfo().username);
+  const [gitlabUsername] = safelyTry(() => process.env['GITLAB_USER_LOGIN']);
+  const [username] = safelyTry(() => os.userInfo().username);
 
   return {
     id: uuidv1(),
-    userName: username ?? UNKNOWN_VALUE,
+    userName: (gitlabUsername ? gitlabUsername : username) ?? UNKNOWN_VALUE,
     cpuCount: os.cpus().length,
     hostname: os.hostname(),
     platform: os.type(),
