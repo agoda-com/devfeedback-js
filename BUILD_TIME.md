@@ -1,6 +1,6 @@
 # Build Time (Compilation Time)
 
-Requires `@agoda/devfeedback` version 1.0.0 or later.
+Requires `@agoda-com/devfeedback` version 1.0.0 or later.
 
 ## Usage
 
@@ -11,7 +11,7 @@ Requires `@agoda/devfeedback` version 1.0.0 or later.
 If you use **Webpack**, you can add the following to your `webpack.config.js` file:
 
 ```javascript
-const { WebpackBuildStatsPlugin } = require('@agoda/devfeedback');
+const { WebpackBuildStatsPlugin } = require('@agoda-com/devfeedback');
 
 module.exports = {
   // ...
@@ -27,7 +27,7 @@ module.exports = {
 If you use **Vite** you can add the following to your `vite.config.js` file:
 
 ```javascript
-import { viteBuildStatsPlugin } from '@agoda/devfeedback';
+import { viteBuildStatsPlugin } from '@agoda-com/devfeedback';
 
 export default defineConfig({
   // ...
@@ -37,8 +37,6 @@ export default defineConfig({
   ],
 });
 ```
-
-See example here: [cronos-project-template !75](https://gitlab.agodadev.io/full-stack/templates/cronos-project-template/-/merge_requests/75/).
 
 ### Advanced usage
 
@@ -55,13 +53,3 @@ or
 ```javascript
 viteBuildStatsPlugin('production');
 ```
-
-See examples on [agoda-com-spa-mobile !14885](https://gitlab.agodadev.io/full-stack/monoliths/agoda-com-spa-mobile/-/merge_requests/14885) and [accom-web !4698](https://gitlab.agodadev.io/full-stack/accommodation/accom-web/-/merge_requests/4698).
-
-## Notes
-
-### Migrating from @agoda/webpack-build-stats-collector
-
-Your project might be already collecting the build data using `@agoda/webpack-build-stats-collector` ([see list of projects that are using it](https://superset.agodadev.io/superset/dashboard/2509/?native_filters_key=n4RLPn3wh9N63l5LT0r4EfaJI1j-o3wLb7vg0cjOy0_H31lXHAVjlhkjAOnF_tye)) which is already deprecated.
-
-Please follow this example [revenue-management !524](https://gitlab.agodadev.io/full-stack/ycs/revenue-management/-/merge_requests/524) to migrate to this new plugin.

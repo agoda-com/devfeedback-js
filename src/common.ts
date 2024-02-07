@@ -30,12 +30,12 @@ export const getCommonMetadata = (
     ? repoName.substring(0, repoName.lastIndexOf('.'))
     : repoName;
 
-  const [gitlabUsername] = safelyTry(() => process.env['GITLAB_USER_LOGIN']);
-  const [username] = safelyTry(() => os.userInfo().username);
+  const [gitUserName] = safelyTry(() => process.env['GITLAB_USER_LOGIN'] ?? process.env['GITHUB_ACTOR']);
+  const [osUsername] = safelyTry(() => os.userInfo().username);
 
   return {
     id: uuidv1(),
-    userName: (gitlabUsername ? gitlabUsername : username) ?? UNKNOWN_VALUE,
+    userName: (gitUserName ? gitUserName : osUsername) ?? UNKNOWN_VALUE,
     cpuCount: os.cpus().length,
     hostname: os.hostname(),
     platform: os.type(),
@@ -58,9 +58,9 @@ export const getCommonMetadata = (
 };
 
 const ENDPOINT_FROM_TYPE = {
-  webpack: 'http://devlocalmetrics.tooling.hk.agoda.is/webpack',
-  vite: 'http://devlocalmetrics.tooling.hk.agoda.is/vite',
-  vitest: 'http://devlocalmetrics.tooling.hk.agoda.is/vitest',
+  webpack: process.env.WEBPACK_ENDPOINT,
+  vite: process.env.VITE_ENDPOINT,
+  vitest: process.env.VITEST_ENDPOINT,
 };
 
 const LOG_FILE = 'devfeedback.log';
@@ -77,6 +77,11 @@ const sendData = async (endpoint: string, data: CommonMetadata): Promise<boolean
 export const sendBuildData = async (buildStats: WebpackBuildData | ViteBuildData) => {
   const endpoint = ENDPOINT_FROM_TYPE[buildStats.type];
 
+  if (!endpoint) {
+    console.log(`No endpoint found for type ${buildStats.type}. Please set the environment variable ${buildStats.type.toUpperCase()}_ENDPOINT.`);
+    return;
+  }
+
   console.log(`Your build time was ${buildStats.timeTaken.toFixed(2)}ms.`);
 
   const sent = await sendData(endpoint, buildStats);
@@ -92,6 +97,11 @@ export const sendBuildData = async (buildStats: WebpackBuildData | ViteBuildData
 
 export const sendTestData = async (testData: VitestTestData) => {
   const endpoint = ENDPOINT_FROM_TYPE[testData.type];
+
+  if (!endpoint) {
+    console.log(`No endpoint found for type ${testData.type}. Please set the environment variable ${testData.type.toUpperCase()}_ENDPOINT.`);
+    return;
+  }
 
   console.log(`Your test time was ${testData.timeTaken.toFixed(2)}ms.`);
 

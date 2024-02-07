@@ -1,5 +1,5 @@
 {
-  "name": "@agoda/devfeedback",
+  "name": "@agoda-com/devfeedback",
   "exports": {
     "require": "./lib/cjs/index.js",
     "import": "./lib/esm/index.js"

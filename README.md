@@ -1,25 +1,19 @@
-# @agoda/devfeedback
+# @agoda-com/devfeedback
 
 This is a JavaScript/TypeScript package to collect metrics that relate to developers' experience.
 
 ## Installing
 
-Make sure you have added Agoda's npm registry to your `.npmrc` file:
+Install the package:
 
 ```bash
-@agoda:registry=https://repo-hkg.agodadev.io/api/npm/agoda-npm-local
-```
-
-Then install the package:
-
-```bash
-npm install --save-dev @agoda/devfeedback
+npm install --save-dev @agoda-com/devfeedback
 ```
 
 or
 
 ```bash
-yarn add --dev @agoda/devfeedback
+yarn add --dev @agoda-com/devfeedback
 ```
 
 Please note that when an error happens, the package will put the error message to `devfeedback.log` file in the current working directory.  
@@ -52,8 +46,3 @@ For compilation time, Webpack data goes to `messaging.webpackstatsmessage` and V
 For test data, Vitest data goes to `messaging.vitesttestrunmessage`, `messaging.vitesttestfilemessage`, and `messaging.vitesttestcasemessage` for test run, test file, and test case respectively.
 
 \* _remember that there is a delay between the time you run the build and the time the data is available in Hadoop_
-
-## Other
-
-- [Dashboard](https://superset.agodadev.io/superset/dashboard/439/)
-- [The server where the data is sent to](https://gitlab.agodadev.io/full-stack/tooling/developer-local-metrics)

@@ -1,6 +1,6 @@
 # Test Data
 
-Requires `@agoda/devfeedback` version 1.1.1 or later.
+Requires `@agoda-com/devfeedback` version 1.1.1 or later.
 
 ## Usage
 
@@ -11,7 +11,7 @@ Requires `@agoda/devfeedback` version 1.1.1 or later.
 If you use **Vitest**, you can add the following to your `vitest.config.js` file:
 
 ```javascript
-import { VitestTestDataPlugin } from '@agoda/devfeedback'
+import { VitestTestDataPlugin } from '@agoda-com/devfeedback'
 
 export default defineConfig({
   ...,
@@ -24,12 +24,10 @@ export default defineConfig({
 
 Don't forget to keep `'default'` reporter in the list, otherwise you won't be able to see your test result in the console.
 
-See example here: [supply-iam !65](https://gitlab.agodadev.io/full-stack/ycs/supply-iam/-/merge_requests/65/).
-
 or if you are running tests using command line, you might need to add `--reporter` flag to your command like:
 
 ```bash
-yarn vitest --reporter ./node_modules/@agoda/devfeedback/lib/esm/VitestTestDataPlugin run
+yarn vitest --reporter ./node_modules/@agoda-com/devfeedback/lib/esm/VitestTestDataPlugin run
 ```
 
 ##### IntelliJ IDE (WebStorm)
@@ -40,17 +38,13 @@ To support IntelliJ IDE such as WebStorm that some of your developers might be u
 2. Click `Edit configuration templates...`
 3. Click `Vitest`
 
-<img
-  src="images/vitest_run_configuration_templates.png"
-  alt="Vitest Run Configuration Templates Window" width="800" />
+<img src="images/vitest_run_configuration_templates.png" alt="Vitest Run Configuration Templates Window" width="800" />
 
 - Tick `Store as project file`
 - Fill `Configuration file` with your `vitest.config.js` file
-- Add `--reporter ./node_modules/@agoda/devfeedback/lib/esm/VitestTestDataPlugin` to `Vitest options`
+- Add `--reporter ./node_modules/@agoda-com/devfeedback/lib/esm/VitestTestDataPlugin` to `Vitest options`
 - Make sure it applies on `All tests`
 - Click `OK` and this will create a new file in `.run` folder in your project directory
-
-See example here: [supply-iam !66](https://gitlab.agodadev.io/full-stack/ycs/supply-iam/-/merge_requests/66)
 
 _Please note that the Vitest template will apply only to new Vitest run configurations, you might need to delete the old ones to run tests with the new template._
 
