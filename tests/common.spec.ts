@@ -226,6 +226,7 @@ describe('common', () => {
   });
 
   describe('sendBuildData', () => {
+
     it('should write error object to log file if request fails', async () => {
       // mock axios request
       mockedAxios.post.mockReturnValue(Promise.reject(new Error('failed bro')));
@@ -233,7 +234,10 @@ describe('common', () => {
       // mock fs
       mockedFs.writeFileSync.mockImplementationOnce(() => {});
 
-      await sendBuildData({ timeTaken: 100 } as any);
+      //mock process.env
+      process.env.WEBPACK_ENDPOINT = 'http://mock-endpoint.com';
+
+      await sendBuildData({ timeTaken: 100, type: 'webpack' } as any);
 
       const fileName = mockedFs.writeFileSync.mock.calls[0][0];
       expect(fileName).toEqual('devfeedback.log');
@@ -253,7 +257,10 @@ describe('common', () => {
       // mock fs
       mockedFs.writeFileSync.mockImplementationOnce(() => {});
 
-      await sendBuildData({ timeTaken: 100 } as any);
+      //mock process.env
+      process.env.WEBPACK_ENDPOINT = 'http://mock-endpoint.com';
+
+      await sendBuildData({ timeTaken: 100, type: 'webpack' } as any);
 
       expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
         'devfeedback.log',
