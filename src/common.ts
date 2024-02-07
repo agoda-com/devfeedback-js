@@ -57,10 +57,12 @@ export const getCommonMetadata = (
   };
 };
 
-const ENDPOINT_FROM_TYPE = {
-  webpack: process.env.WEBPACK_ENDPOINT,
-  vite: process.env.VITE_ENDPOINT,
-  vitest: process.env.VITEST_ENDPOINT,
+const getEndpointFromType = (type: string) => {
+  return {
+    webpack: process.env.WEBPACK_ENDPOINT,
+    vite: process.env.VITE_ENDPOINT,
+    vitest: process.env.VITEST_ENDPOINT,
+  }[type];
 };
 
 const LOG_FILE = 'devfeedback.log';
@@ -75,10 +77,10 @@ const sendData = async (endpoint: string, data: CommonMetadata): Promise<boolean
 };
 
 export const sendBuildData = async (buildStats: WebpackBuildData | ViteBuildData) => {
-  const endpoint = ENDPOINT_FROM_TYPE[buildStats.type];
+  const endpoint = getEndpointFromType(buildStats.type);
 
   if (!endpoint) {
-    console.log(`No endpoint found for type ${buildStats.type}. Please set the environment variable ${buildStats.type.toUpperCase()}_ENDPOINT.`);
+    console.log(`No endpoint found for type ${buildStats.type}. Please set the environment variable.`);
     return;
   }
 
@@ -96,7 +98,7 @@ export const sendBuildData = async (buildStats: WebpackBuildData | ViteBuildData
 };
 
 export const sendTestData = async (testData: VitestTestData) => {
-  const endpoint = ENDPOINT_FROM_TYPE[testData.type];
+  const endpoint = getEndpointFromType(testData.type);
 
   if (!endpoint) {
     console.log(`No endpoint found for type ${testData.type}. Please set the environment variable ${testData.type.toUpperCase()}_ENDPOINT.`);
