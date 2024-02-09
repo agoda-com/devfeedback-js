@@ -33,35 +33,3 @@ export interface ViteBuildData extends CommonMetadata {
   type: 'vite';
   viteVersion: string | null;
 }
-
-export interface VitestTestFile {
-  name: string;
-  collectDuration: number | null;
-  setupDuration: number | null;
-  prepareDuration: number | null;
-  environmentLoad: number | null;
-  status: 'run' | 'skip' | 'only' | 'todo' | 'pass' | 'fail' | null;
-  startTime: number;
-  duration: number;
-}
-
-export interface VitestTestCase {
-  name: string;
-  status: 'run' | 'skip' | 'only' | 'todo' | 'pass' | 'fail' | null;
-  errorMessage: string[] | null;
-  startTime: number;
-  duration: number;
-  filename: string;
-}
-
-export interface VitestTestData extends CommonMetadata {
-  type: 'vitest';
-  vitestVersion: string | null;
-  mode: 'test' | 'benchmark' | 'typecheck';
-  maxConcurrency: number;
-  watchMode: boolean;
-  testEnvironment: string;
-  runId: string;
-  files: VitestTestFile[];
-  testcases: VitestTestCase[];
-}
