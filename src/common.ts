@@ -2,7 +2,6 @@ import type {
   CommonMetadata,
   ViteBuildData,
   WebpackBuildData,
-  VitestTestData,
 } from './types';
 import { v1 as uuidv1 } from 'uuid';
 import os from 'os';
@@ -61,7 +60,6 @@ const getEndpointFromType = (type: string) => {
   return {
     webpack: process.env.WEBPACK_ENDPOINT,
     vite: process.env.VITE_ENDPOINT,
-    vitest: process.env.VITEST_ENDPOINT,
   }[type];
 };
 
@@ -95,25 +93,4 @@ export const sendBuildData = async (buildStats: WebpackBuildData | ViteBuildData
   }
 
   console.log(`Your build stats has successfully been sent.`);
-};
-
-export const sendTestData = async (testData: VitestTestData) => {
-  const endpoint = getEndpointFromType(testData.type);
-
-  if (!endpoint) {
-    console.log(`No endpoint found for type ${testData.type}. Please set the environment variable ${testData.type.toUpperCase()}_ENDPOINT.`);
-    return;
-  }
-
-  console.log(`Your test time was ${testData.timeTaken.toFixed(2)}ms.`);
-
-  const sent = await sendData(endpoint, testData);
-  if (!sent) {
-    console.log(
-      `Your test data has not been sent. See logs in ${LOG_FILE} for more info.`,
-    );
-    return;
-  }
-
-  console.log(`Your test data has successfully been sent.`);
 };
