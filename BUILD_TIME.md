@@ -1,6 +1,6 @@
 # Build Time (Compilation Time)
 
-Requires `@agoda-com/devfeedback` version 1.0.0 or later.
+Requires `agoda-devfeedback` version 1.0.0 or later.
 
 ## Usage
 
@@ -11,7 +11,7 @@ Requires `@agoda-com/devfeedback` version 1.0.0 or later.
 If you use **Webpack**, you can add the following to your `webpack.config.js` file:
 
 ```javascript
-const { WebpackBuildStatsPlugin } = require('@agoda-com/devfeedback');
+const { WebpackBuildStatsPlugin } = require('agoda-devfeedback');
 
 module.exports = {
   // ...
@@ -27,7 +27,7 @@ module.exports = {
 If you use **Vite** you can add the following to your `vite.config.js` file:
 
 ```javascript
-import { viteBuildStatsPlugin } from '@agoda-com/devfeedback';
+import { viteBuildStatsPlugin } from 'agoda-devfeedback';
 
 export default defineConfig({
   // ...
