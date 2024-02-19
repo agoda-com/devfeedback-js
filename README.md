@@ -1,4 +1,4 @@
-# @agoda-com/devfeedback
+# agoda-devfeedback
 
 This is a JavaScript/TypeScript package to collect metrics that relate to developers' experience.
 
@@ -7,13 +7,13 @@ This is a JavaScript/TypeScript package to collect metrics that relate to develo
 Install the package:
 
 ```bash
-npm install --save-dev @agoda-com/devfeedback
+npm install --save-dev agoda-devfeedback
 ```
 
 or
 
 ```bash
-yarn add --dev @agoda-com/devfeedback
+yarn add --dev agoda-devfeedback
 ```
 
 Please note that when an error happens, the package will put the error message to `devfeedback.log` file in the current working directory.  
