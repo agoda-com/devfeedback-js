@@ -4,11 +4,26 @@ import type { Compiler, Stats, StatsCompilation } from 'webpack';
 
 export class WebpackBuildStatsPlugin {
   private readonly customIdentifier: string | undefined;
+  private bundleSize: number = 0;
+
   constructor(customIdentifier: string | undefined = process.env.npm_lifecycle_event) {
     this.customIdentifier = customIdentifier;
   }
 
   apply(compiler: Compiler) {
+    compiler.hooks.emit.tapAsync('AgodaBuildStatsPlugin', (compilation, callback) => {
+      this.bundleSize = 0;
+
+      for (const assetName in compilation.assets) {
+        if (compilation.assets.hasOwnProperty(assetName)) {
+          const asset = compilation.assets[assetName];
+          this.bundleSize += asset.size();
+        }
+      }
+
+      callback();
+    });
+
     compiler.hooks.done.tap('AgodaBuildStatsPlugin', async (stats: Stats) => {
       const jsonStats: StatsCompilation = stats.toJson();
 
@@ -19,7 +34,10 @@ export class WebpackBuildStatsPlugin {
         webpackVersion: jsonStats.version ?? null,
         nbrOfCachedModules: jsonStats.modules?.filter((m) => m.cached).length ?? 0,
         nbrOfRebuiltModules: jsonStats.modules?.filter((m) => m.built).length ?? 0,
+        bundleSize: this.bundleSize ?? 0,
       };
+
+      // console.log(buildStats);
 
       sendBuildData(buildStats);
     });
