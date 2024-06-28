@@ -10,6 +10,7 @@ export function viteBuildStatsPlugin(
   let buildStart: number;
   let buildEnd: number;
   let rollupVersion: string | undefined = undefined;
+  let bundleFiles: Record<string, number> = {};
   let bundleSize: number = 0;
 
   return {
@@ -21,11 +22,12 @@ export function viteBuildStatsPlugin(
     buildEnd: function () {
       buildEnd = Date.now();
     },
-    generateBundle: async function (options, bundle) {
+    writeBundle: async function (options, bundle) {
       for (const [fileName, assetInfo] of Object.entries(bundle)) {
         const filePath = path.join(options.dir || '', fileName);
         try {
           const stats = await fs.stat(filePath);
+          bundleFiles[fileName] = stats.size;
           bundleSize += stats.size;
         } catch (err) {
           console.error(`Error reading file size for ${fileName}:`, err);
@@ -37,6 +39,7 @@ export function viteBuildStatsPlugin(
         ...getCommonMetadata(buildEnd - buildStart, customIdentifier),
         type: 'vite',
         viteVersion: rollupVersion ?? null,
+        bundleFiles,
         bundleSize,
       };
 

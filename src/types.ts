@@ -27,11 +27,13 @@ export interface WebpackBuildData extends CommonMetadata {
   compilationHash: string | null;
   nbrOfCachedModules: number;
   nbrOfRebuiltModules: number;
+  bundleFiles: Record<string, number>;
   bundleSize: number;
 }
 
 export interface ViteBuildData extends CommonMetadata {
   type: 'vite';
   viteVersion: string | null;
+  bundleFiles: Record<string, number>;
   bundleSize: number;
 }
