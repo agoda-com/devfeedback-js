@@ -11,7 +11,6 @@ export function viteBuildStatsPlugin(
   let buildEnd: number;
   let rollupVersion: string | undefined = undefined;
   let bundleFiles: Record<string, number> = {};
-  let bundleSize: number = 0;
 
   return {
     name: 'vite-plugin-agoda-build-reporter',
@@ -28,7 +27,6 @@ export function viteBuildStatsPlugin(
         try {
           const stats = await fs.stat(filePath);
           bundleFiles[fileName] = stats.size;
-          bundleSize += stats.size;
         } catch (err) {
           console.error(`Error reading file size for ${fileName}:`, err);
         }
@@ -40,7 +38,7 @@ export function viteBuildStatsPlugin(
         type: 'vite',
         viteVersion: rollupVersion ?? null,
         bundleFiles,
-        bundleSize,
+        bundleSize: Object.values(bundleFiles).reduce((total, size) => total + size, 0),
       };
 
       sendBuildData(buildStats);
