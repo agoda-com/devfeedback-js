@@ -43,8 +43,6 @@ export function viteBuildStatsPlugin(
         bundleSize,
       };
 
-      // console.log(buildStats);
-
       sendBuildData(buildStats);
     },
   };

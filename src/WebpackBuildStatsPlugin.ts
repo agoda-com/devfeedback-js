@@ -41,8 +41,6 @@ export class WebpackBuildStatsPlugin {
         bundleSize: this.bundleSize ?? 0,
       };
 
-      // console.log(buildStats);
-
       sendBuildData(buildStats);
     });
   }
