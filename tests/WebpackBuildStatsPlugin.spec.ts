@@ -15,6 +15,9 @@ const mockedSendBuildData = sendBuildData as jest.MockedFunction<typeof sendBuil
 
 const mockedCompiler = {
   hooks: {
+    emit: {
+      tapAsync: jest.fn(),
+    },
     done: {
       tap: jest.fn(),
     },
@@ -28,7 +31,12 @@ describe('WebpackBuildStatsPlugin', () => {
     compilationHash: 'blahblahblacksheep',
     nbrOfCachedModules: 1,
     nbrOfRebuiltModules: 1,
-  } as WebpackBuildData;
+    bundleFiles: {
+      'file1.js': 1000,
+      'file2.js': 2000,
+    },
+    bundleSize: 3000,
+  } as unknown as WebpackBuildData;
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -52,9 +60,22 @@ describe('WebpackBuildStatsPlugin', () => {
       }),
     };
 
+    // mock compilation
+    const mockedCompilation = {
+      assets: {
+        'file1.js': { size: () => 1000 },
+        'file2.js': { size: () => 2000 },
+      },
+    };
+
     const plugin = new WebpackBuildStatsPlugin('my custom identifier');
     plugin.apply(mockedCompiler as unknown as Compiler);
 
+    // simulate emit hook
+    const emitCallback = mockedCompiler.hooks.emit.tapAsync.mock.calls[0][1];
+    await emitCallback(mockedCompilation, () => { });
+
+    // simulate done hook
     const callback = mockedCompiler.hooks.done.tap.mock.calls[0][1];
     await callback(mockedStats as unknown as import('webpack').Stats);
 
@@ -76,6 +97,14 @@ describe('WebpackBuildStatsPlugin', () => {
       }),
     };
 
+    // mock compilation
+    const mockedCompilation = {
+      assets: {
+        'file1.js': { size: () => 1000 },
+        'file2.js': { size: () => 2000 },
+      },
+    };
+
     // mock process object
     global.process = {
       env: {
@@ -86,9 +115,22 @@ describe('WebpackBuildStatsPlugin', () => {
     const plugin = new WebpackBuildStatsPlugin();
     plugin.apply(mockedCompiler as unknown as Compiler);
 
+    // simulate emit hook
+    const emitCallback = mockedCompiler.hooks.emit.tapAsync.mock.calls[0][1];
+    await emitCallback(mockedCompilation, () => { });
+
+    // simulate done hook
     const callback = mockedCompiler.hooks.done.tap.mock.calls[0][1];
     await callback(mockedStats as unknown as import('webpack').Stats);
 
     expect(mockedGetCommonMetadata).toBeCalledWith(123, 'default_value');
+    expect(mockedSendBuildData).toBeCalledWith(expect.objectContaining({
+      ...expected,
+      bundleFiles: {
+        'file1.js': 1000,
+        'file2.js': 2000,
+      },
+      bundleSize: 3000,
+    }));
   });
 });
