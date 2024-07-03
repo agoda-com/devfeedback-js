@@ -56,11 +56,23 @@ export const getCommonMetadata = (
   };
 };
 
-const getEndpointFromType = (type: string) => {
-  return {
-    webpack: process.env.WEBPACK_ENDPOINT,
-    vite: process.env.VITE_ENDPOINT,
-  }[type];
+const getEndpointFromType = (type: WebpackBuildData['type'] | ViteBuildData['type']): string => {
+  const endpointsFromEnv: Record<typeof type, string> = {
+    webpack: process.env.WEBPACK_ENDPOINT ?? '',
+    vite: process.env.VITE_ENDPOINT ?? '',
+  };
+
+  const defaultEndpoints: Record<typeof type, string> = {
+    webpack: "http://compilation-metrics/webpack",
+    vite: "http://compilation-metrics/vite",
+  }
+
+  if (endpointsFromEnv[type] === '') {
+    console.warn(`No endpoint found for type "${type}" from environment variable, using default: ${defaultEndpoints[type]}`);
+    return defaultEndpoints[type];
+  }
+
+  return endpointsFromEnv[type];
 };
 
 const LOG_FILE = 'devfeedback.log';
@@ -76,11 +88,6 @@ const sendData = async (endpoint: string, data: CommonMetadata): Promise<boolean
 
 export const sendBuildData = async (buildStats: WebpackBuildData | ViteBuildData) => {
   const endpoint = getEndpointFromType(buildStats.type);
-
-  if (!endpoint) {
-    console.log(`No endpoint found for type ${buildStats.type}. Please set the environment variable.`);
-    return;
-  }
 
   console.log(`Your build time was ${buildStats.timeTaken.toFixed(2)}ms.`);
 
