@@ -6,6 +6,15 @@ Welcome to agoda-devfeedback, the JavaScript/TypeScript package that's about to 
 
 This package supports collecting the build time (compilation time) of projects using Webpack (4.x or 5.x) or Vite (4.x). It's like a stopwatch for your builds, but cooler.
 
+### Consuming the data
+
+You will need to consume the data the data is sent to the following default endpoints and you can use teh Env Var to override this.
+
+| Bundler | Default | Environment Variable Override | Post Data Example
+| --- | --- | --- | --- |
+| WebPack | "<http://compilation-metrics/webpack>" | WEBPACK_ENDPOINT | [click here](examples/webpack.json) |
+| Vite | "<http://compilation-metrics/vite>" | VITE_ENDPOINT | [click here](examples/vite.json) |
+
 ### Basic Usage: Easy as Pie (Mmm... pie 🥧)
 
 First, let's get this party started. Install the package:
@@ -13,7 +22,9 @@ First, let's get this party started. Install the package:
 ```bash
 npm install --save-dev agoda-devfeedback
 ```
+
 or if you're yarn-clined:
+
 ```bash
 yarn add --dev agoda-devfeedback
 ```
@@ -59,7 +70,9 @@ But wait, there's more! If you want to define your own identifier (because you'r
 ```javascript
 new WebpackBuildStatsPlugin('production-build-deluxe');
 ```
+
 or for Vite:
+
 ```javascript
 viteBuildStatsPlugin('vite-build-extraordinaire');
 ```
@@ -79,7 +92,7 @@ We welcome contributions! Whether you're fixing bugs, improving documentation, o
 
 Remember, in the world of agoda-devfeedback, there are no stupid questions, only builds that are taking too long!
 
-## And Finally...
+## And Finally
 
 Remember, in JavaScript development, there are only two types of projects: those that are measuring their build times, and those that are still waiting for their builds to finish. With agoda-devfeedback, you'll always know exactly how long you're waiting. (Spoiler alert: with our help, it won't be long!)
 
