@@ -58,8 +58,8 @@ export const getCommonMetadata = (
 
 const getEndpointFromType = (type: string) => {
   return {
-    webpack: process.env.WEBPACK_ENDPOINT,
-    vite: process.env.VITE_ENDPOINT,
+    webpack: process.env.WEBPACK_ENDPOINT || "http://compilation-metrics/webpack",
+    vite: process.env.VITE_ENDPOINT || "http://compilation-metrics/vite",
   }[type];
 };
 
