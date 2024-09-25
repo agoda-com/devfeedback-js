@@ -8,7 +8,7 @@
   "module": "./lib/esm/index.js",
   "types": "./lib/index.d.ts",
   "license": "MIT",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "scripts": {
     "build": "tsc --emitDeclarationOnly --outDir ./lib",
     "build-cjs": "tsc --module commonjs --outDir ./lib/cjs",
