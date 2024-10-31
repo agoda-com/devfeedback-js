@@ -112,7 +112,12 @@ describe('viteBuildStatsPlugin', () => {
     (plugin.buildEnd as () => void)();
     await (plugin.closeBundle as () => Promise<void>)();
 
+    const caseSpecificExpected = {
+      ...expected,
+      bundleStats: { ...expected.bundleStats, bootstrapChunkSizeLimitBytes: undefined }
+    }
+
     expect(mockedGetCommonMetadata).toBeCalledWith(100, 'default_value');
-    expect(mockedSendBuildData).toBeCalledWith({ ...expected, bundleStats: { ...expected.bundleStats, bootstrapChunkSizeLimitBytes: undefined } });
+    expect(mockedSendBuildData).toBeCalledWith(caseSpecificExpected);
   });
 });
