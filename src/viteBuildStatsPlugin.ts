@@ -27,10 +27,14 @@ export function viteBuildStatsPlugin(
       outputOptions: NormalizedOutputOptions,
       outputBundle: OutputBundle
     ) => {
-      for (const [_, bundle] of Object.entries(outputBundle)) {
-        if (bundle.name === 'bootstrap' && bundle.type === 'chunk') {
-          bootstrapChunkSizeBytes = new Blob([bundle.code]).size;
+      try {
+        for (const [_, bundle] of Object.entries(outputBundle)) {
+          if (bundle.name === 'bootstrap' && bundle.type === 'chunk') {
+            bootstrapChunkSizeBytes = new Blob([bundle.code]).size;
+          }
         }
+      } catch (err) {
+        console.warn('Failed to measure bootstrap chunk size because of error', err)
       }
     },
     closeBundle: async function () {
