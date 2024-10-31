@@ -29,7 +29,13 @@ export interface WebpackBuildData extends CommonMetadata {
   nbrOfRebuiltModules: number;
 }
 
+export interface ViteBundleStats {
+  bootstrapChunkSizeBytes: number
+  bootstrapChunkSizeLimitBytes?: number
+}
+
 export interface ViteBuildData extends CommonMetadata {
   type: 'vite';
   viteVersion: string | null;
+  bundleStats?: ViteBundleStats
 }
