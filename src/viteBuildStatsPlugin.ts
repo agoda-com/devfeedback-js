@@ -11,7 +11,7 @@ export function viteBuildStatsPlugin(
 ): Plugin {
   let buildStart: number;
   let buildEnd: number;
-  let bootstrapChunkSizeBytes: number;
+  let bootstrapChunkSizeBytes: number | undefined = undefined;
   let rollupVersion: string | undefined = undefined;
 
   return {

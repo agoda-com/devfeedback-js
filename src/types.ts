@@ -30,7 +30,7 @@ export interface WebpackBuildData extends CommonMetadata {
 }
 
 export interface ViteBundleStats {
-  bootstrapChunkSizeBytes: number
+  bootstrapChunkSizeBytes?: number
   bootstrapChunkSizeLimitBytes?: number
 }
 
