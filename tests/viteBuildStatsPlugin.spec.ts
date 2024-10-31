@@ -1,7 +1,8 @@
-import type { CommonMetadata, ViteBuildData } from '../src/types';
-import { viteBuildStatsPlugin } from "../src";
-import { getCommonMetadata, sendBuildData } from '../src/common';
 import { NormalizedOutputOptions, OutputBundle, OutputChunk, OutputAsset } from "rollup";
+
+import { viteBuildStatsPlugin } from '../src';
+import type { CommonMetadata, ViteBuildData } from '../src/types';
+import { getCommonMetadata, sendBuildData } from '../src/common';
 
 jest.mock('../src/common', () => ({
   getCommonMetadata: jest.fn(),

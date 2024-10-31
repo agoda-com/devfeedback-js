@@ -1,6 +1,7 @@
-import type { ViteBuildData, ViteBundleStats } from "./types";
 import { type Plugin } from 'vite';
 import { NormalizedOutputOptions, OutputBundle } from 'rollup';
+
+import type { ViteBuildData, ViteBundleStats } from './types';
 import { getCommonMetadata, sendBuildData } from './common';
 
 export function viteBuildStatsPlugin(
