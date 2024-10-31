@@ -1,8 +1,9 @@
-import { NormalizedOutputOptions, OutputBundle, OutputChunk, OutputAsset } from "rollup";
+import { NormalizedOutputOptions, OutputBundle } from "rollup";
 
 import { viteBuildStatsPlugin } from '../src';
 import type { CommonMetadata, ViteBuildData } from '../src/types';
 import { getCommonMetadata, sendBuildData } from '../src/common';
+import { generateViteOutputBundleData } from "./utils/test-data-generator";
 
 jest.mock('../src/common', () => ({
   getCommonMetadata: jest.fn(),
@@ -13,45 +14,6 @@ const mockedGetCommonMetadata = getCommonMetadata as jest.MockedFunction<
   typeof getCommonMetadata
 >;
 const mockedSendBuildData = sendBuildData as jest.MockedFunction<typeof sendBuildData>;
-
-function generateOutputBundle(): OutputBundle {
-  const bootstrapChunk: OutputChunk = {
-    name: 'bootstrap',
-    type: 'chunk',
-    code: 'console.log("Bygone visions of life asunder, long since quelled by newfound wonder.");' +
-      'console.log("Bygone visions of life asunder, long since quelled by newfound wonder.");' +
-      'console.log("Bygone visions of life asunder, long since quelled by newfound wonder.");' +
-      'console.log("Bygone visions of life asunder, long since quelled by newfound wonder.");' +
-      'console.log("Bygone visions of life asunder, long since quelled by newfound wonder.");'
-  } as unknown as OutputChunk;
-
-  const nonBootstrapChunkA: OutputChunk = {
-    name: 'notBootstrapA',
-    type: 'chunk',
-    code: 'random sentence to pass my time'
-  } as unknown as OutputChunk;
-
-  const nonBootstrapChunkB: OutputChunk = {
-    name: 'notBootstrapB',
-    type: 'chunk',
-    code: 'random sentence to pass my time again'
-  } as unknown as OutputChunk;
-
-  const assetNamedBootstrap: OutputAsset = {
-    name: 'bootstrap',
-    fileName: 'bootstrap.jpg',
-    type: 'asset',
-    source: '../../assets/bootstrap.jpg',
-    needsCodeReference: false
-  };
-
-  return {
-    'a-not-bootstrap.js': nonBootstrapChunkA,
-    'bootstrap.xyz123.js': bootstrapChunk,
-    'b-not-bootstrap.js': nonBootstrapChunkB,
-    'bootstrap.jpg': assetNamedBootstrap
-  };
-}
 
 describe('viteBuildStatsPlugin', () => {
   const bootstrapChunkSizeLimitKb = 2_000;
@@ -68,7 +30,7 @@ describe('viteBuildStatsPlugin', () => {
     jest.resetAllMocks();
   });
 
-  it('should send the correct data', async () => {
+  it('should send the correct data - happy path', async () => {
     // mock measurement
     global.Date = {
       now: jest.fn().mockReturnValueOnce(0).mockReturnValueOnce(100),
@@ -77,7 +39,7 @@ describe('viteBuildStatsPlugin', () => {
     // mock common utils
     mockedGetCommonMetadata.mockReturnValue({} as CommonMetadata);
     mockedSendBuildData.mockReturnValue(Promise.resolve());
-    const bundle = generateOutputBundle();
+    const bundle = generateViteOutputBundleData(true);
 
     const plugin = viteBuildStatsPlugin('my custom identifier', bootstrapChunkSizeLimitKb);
     (plugin.buildStart as () => void).bind({ meta: { rollupVersion: '1.2.3' } })();
@@ -89,6 +51,35 @@ describe('viteBuildStatsPlugin', () => {
     expect(mockedSendBuildData).toBeCalledWith(expected);
   });
 
+  it('should send the correct data - bootstrap chunk not found', async () => {
+    // mock measurement
+    global.Date = {
+      now: jest.fn().mockReturnValueOnce(0).mockReturnValueOnce(100),
+    } as unknown as typeof Date;
+
+    // mock common utils
+    mockedGetCommonMetadata.mockReturnValue({} as CommonMetadata);
+    mockedSendBuildData.mockReturnValue(Promise.resolve());
+    const bundle = generateViteOutputBundleData(false);
+
+    const plugin = viteBuildStatsPlugin('my custom identifier');
+    (plugin.buildStart as () => void).bind({ meta: { rollupVersion: '1.2.3' } })();
+    (plugin.generateBundle as (opts: NormalizedOutputOptions, bundle: OutputBundle) => void)({} as NormalizedOutputOptions, bundle);
+    (plugin.buildEnd as () => void)();
+    await (plugin.closeBundle as () => Promise<void>)();
+
+    const caseSpecificExpected = {
+      ...expected,
+      bundleStats: {
+        generateOutputBundleData: undefined,
+        bootstrapChunkSizeLimitBytes: undefined
+      }
+    }
+
+    expect(mockedGetCommonMetadata).toBeCalledWith(100, 'my custom identifier');
+    expect(mockedSendBuildData).toBeCalledWith(caseSpecificExpected);
+  });
+
   it('should use process.env.npm_lifecycle_event as default custom identifier', async () => {
     // mock measurement
     global.Date = {
@@ -98,7 +89,7 @@ describe('viteBuildStatsPlugin', () => {
     // mock common utils
     mockedGetCommonMetadata.mockReturnValue({} as CommonMetadata);
     mockedSendBuildData.mockReturnValue(Promise.resolve());
-    const bundle = generateOutputBundle();
+    const bundle = generateViteOutputBundleData(true);
 
     // mock process object
     global.process = {
