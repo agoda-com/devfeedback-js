@@ -77,6 +77,12 @@ or for Vite:
 viteBuildStatsPlugin('vite-build-extraordinaire');
 ```
 
+Wait, there's even more! If you are limiting the bootstrap chunk size of your js bundle (see [anti-chonk](https://www.npmjs.com/package/vite-plugin-anti-chonk)), then you can pass that limit here as well. This will help you track how this limit has changed on your project.   
+
+```javascript
+viteBuildStatsPlugin('vite-build-extraordinaire', 1000); // 1 mega byte
+```
+
 ## The F5 Experience: Because Waiting is So Last Year
 
 What is the F5 Experience? have a read [here](https://beerandserversdontmix.com/2024/08/15/an-introduction-to-the-f5-experience/)
