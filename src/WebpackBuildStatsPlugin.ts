@@ -9,27 +9,19 @@ export class WebpackBuildStatsPlugin {
   }
 
   apply(compiler: Compiler) {
-    compiler.hooks.done.tapPromise('AgodaBuildStatsPlugin', async (stats: Stats) => {
-      let nbrOfCachedModules = 0, nbrOfRebuiltModules = 0;
-      // https://github.com/webpack/webpack/blob/f4092a60598a73447687fa6e6375bb4786bfcbe3/lib/stats/DefaultStatsFactoryPlugin.js#L1142
-      const compilation = stats.compilation;
-      for (const module of compilation.modules) {
-        if (!compilation.builtModules.has(module) && !compilation.codeGeneratedModules.has(module)) {
-          nbrOfCachedModules += 1;
-        } else {
-          nbrOfRebuiltModules += 1;
-        }
-      }
+    compiler.hooks.done.tap('AgodaBuildStatsPlugin', async (stats: Stats) => {
+      const jsonStats: StatsCompilation = stats.toJson();
+
       const buildStats: WebpackBuildData = {
-        ...getCommonMetadata(stats.endTime - stats.startTime ?? -1, this.customIdentifier),
+        ...getCommonMetadata(jsonStats.time ?? -1, this.customIdentifier),
         type: 'webpack',
-        compilationHash: stats.hash ?? null,
-        webpackVersion: compiler.webpack.version ?? null,
-        nbrOfCachedModules,
-        nbrOfRebuiltModules,
+        compilationHash: jsonStats.hash ?? null,
+        webpackVersion: jsonStats.version ?? null,
+        nbrOfCachedModules: jsonStats.modules?.filter((m) => m.cached).length ?? 0,
+        nbrOfRebuiltModules: jsonStats.modules?.filter((m) => m.built).length ?? 0,
       };
 
-      await sendBuildData(buildStats);
+      sendBuildData(buildStats);
     });
   }
 }
