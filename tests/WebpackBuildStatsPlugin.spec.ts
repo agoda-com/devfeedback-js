@@ -16,7 +16,7 @@ const mockedSendBuildData = sendBuildData as jest.MockedFunction<typeof sendBuil
 const mockedCompiler = {
   hooks: {
     done: {
-      tap: jest.fn(),
+      tapPromise: jest.fn(),
     },
   },
 };
@@ -55,7 +55,7 @@ describe('WebpackBuildStatsPlugin', () => {
     const plugin = new WebpackBuildStatsPlugin('my custom identifier');
     plugin.apply(mockedCompiler as unknown as Compiler);
 
-    const callback = mockedCompiler.hooks.done.tap.mock.calls[0][1];
+    const callback = mockedCompiler.hooks.done.tapPromise.mock.calls[0][1];
     await callback(mockedStats as unknown as import('webpack').Stats);
 
     expect(mockedGetCommonMetadata).toBeCalledWith(123, 'my custom identifier');
@@ -86,7 +86,7 @@ describe('WebpackBuildStatsPlugin', () => {
     const plugin = new WebpackBuildStatsPlugin();
     plugin.apply(mockedCompiler as unknown as Compiler);
 
-    const callback = mockedCompiler.hooks.done.tap.mock.calls[0][1];
+    const callback = mockedCompiler.hooks.done.tapPromise.mock.calls[0][1];
     await callback(mockedStats as unknown as import('webpack').Stats);
 
     expect(mockedGetCommonMetadata).toBeCalledWith(123, 'default_value');
