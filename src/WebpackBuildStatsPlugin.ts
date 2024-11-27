@@ -10,7 +10,7 @@ export class WebpackBuildStatsPlugin {
 
   apply(compiler: Compiler) {
     compiler.hooks.done.tap('AgodaBuildStatsPlugin', async (stats: Stats) => {
-      const jsonStats: StatsCompilation = stats.toJson();
+      const jsonStats: StatsCompilation = stats.toJson({ preset: 'none', timings: true, hash: true, version: true, modules: true });
 
       const buildStats: WebpackBuildData = {
         ...getCommonMetadata(jsonStats.time ?? -1, this.customIdentifier),
