@@ -9,7 +9,7 @@ export class WebpackBuildStatsPlugin {
   }
 
   apply(compiler: Compiler) {
-    compiler.hooks.done.tapAsync('AgodaBuildStatsPlugin', async (stats: Stats, callback) => {
+    compiler.hooks.done.tapPromise('AgodaBuildStatsPlugin', async (stats: Stats) => {
       let nbrOfCachedModules = 0, nbrOfRebuiltModules = 0;
       // https://github.com/webpack/webpack/blob/f4092a60598a73447687fa6e6375bb4786bfcbe3/lib/stats/DefaultStatsFactoryPlugin.js#L1142
       const compilation = stats.compilation;
@@ -30,7 +30,6 @@ export class WebpackBuildStatsPlugin {
       };
 
       await sendBuildData(buildStats);
-      callback();
     });
   }
 }
