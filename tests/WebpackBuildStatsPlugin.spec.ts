@@ -13,10 +13,19 @@ const mockedGetCommonMetadata = getCommonMetadata as jest.MockedFunction<
 >;
 const mockedSendBuildData = sendBuildData as jest.MockedFunction<typeof sendBuildData>;
 
+const compilation = {
+  modules: new Set([1, 2, 3]),
+  builtModules: new Set([1]),
+  codeGeneratedModules: new Set([2]),
+};
 const mockedCompiler = {
+  webpack: {
+    version: '5.51.1',
+  },
+  compilation,
   hooks: {
     done: {
-      tap: jest.fn(),
+      tapPromise: jest.fn(),
     },
   },
 };
@@ -27,7 +36,7 @@ describe('WebpackBuildStatsPlugin', () => {
     webpackVersion: '5.51.1',
     compilationHash: 'blahblahblacksheep',
     nbrOfCachedModules: 1,
-    nbrOfRebuiltModules: 1,
+    nbrOfRebuiltModules: 2,
   } as WebpackBuildData;
 
   beforeEach(() => {
@@ -41,6 +50,10 @@ describe('WebpackBuildStatsPlugin', () => {
 
     // mock stats
     const mockedStats = {
+      compilation,
+      startTime: 1000,
+      endTime: 1123,
+      hash: 'blahblahblacksheep',
       toJson: jest.fn().mockReturnValue({
         time: 123,
         hash: 'blahblahblacksheep',
@@ -55,7 +68,7 @@ describe('WebpackBuildStatsPlugin', () => {
     const plugin = new WebpackBuildStatsPlugin('my custom identifier');
     plugin.apply(mockedCompiler as unknown as Compiler);
 
-    const callback = mockedCompiler.hooks.done.tap.mock.calls[0][1];
+    const callback = mockedCompiler.hooks.done.tapPromise.mock.calls[0][1];
     await callback(mockedStats as unknown as import('webpack').Stats);
 
     expect(mockedGetCommonMetadata).toBeCalledWith(123, 'my custom identifier');
@@ -65,6 +78,10 @@ describe('WebpackBuildStatsPlugin', () => {
   it('should use process.env.npm_lifecycle_event as default custom identifier', async () => {
     // mock stats
     const mockedStats = {
+      compilation,
+      startTime: 1000,
+      endTime: 1123,
+      hash: 'blahblahblacksheep',
       toJson: jest.fn().mockReturnValue({
         time: 123,
         hash: 'blahblahblacksheep',
@@ -86,7 +103,7 @@ describe('WebpackBuildStatsPlugin', () => {
     const plugin = new WebpackBuildStatsPlugin();
     plugin.apply(mockedCompiler as unknown as Compiler);
 
-    const callback = mockedCompiler.hooks.done.tap.mock.calls[0][1];
+    const callback = mockedCompiler.hooks.done.tapPromise.mock.calls[0][1];
     await callback(mockedStats as unknown as import('webpack').Stats);
 
     expect(mockedGetCommonMetadata).toBeCalledWith(123, 'default_value');
