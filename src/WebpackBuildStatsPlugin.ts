@@ -9,7 +9,7 @@ export class WebpackBuildStatsPlugin {
   }
 
   apply(compiler: Compiler) {
-    compiler.hooks.done.tap('AgodaBuildStatsPlugin', async (stats: Stats) => {
+    compiler.hooks.done.tapPromise('AgodaBuildStatsPlugin', async (stats: Stats) => {
       const jsonStats: StatsCompilation = stats.toJson({ preset: 'none', timings: true, hash: true, version: true, modules: true });
 
       const buildStats: WebpackBuildData = {
@@ -21,7 +21,7 @@ export class WebpackBuildStatsPlugin {
         nbrOfRebuiltModules: jsonStats.modules?.filter((m) => m.built).length ?? 0,
       };
 
-      sendBuildData(buildStats);
+      await sendBuildData(buildStats);
     });
   }
 }
