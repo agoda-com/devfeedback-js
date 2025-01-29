@@ -27,6 +27,16 @@ export interface WebpackBuildData extends CommonMetadata {
   compilationHash: string | null;
   nbrOfCachedModules: number;
   nbrOfRebuiltModules: number;
+  devFeedback?: DevFeedbackEvent[];
+}
+
+export interface DevFeedbackEvent {
+  // e.g. "fileChange", "compileStart", "hmrApplied", "domUpdated"
+  type: string;
+  // The amount of time since some reference point, in milliseconds
+  elapsedMs: number;
+  // optional, e.g. a file path
+  file?: string;
 }
 
 export interface ViteBundleStats {
