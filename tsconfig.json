@@ -1,14 +1,16 @@
 {
-  "compilerOptions": {
-    "moduleResolution": "node",
-    "target": "es2016",
-    "module": "commonjs",
-    "declaration": true,
-    "esModuleInterop": true,
-    "strict": true,
-    "allowJs": true,
-    "noImplicitAny": false
-  },
-  "include": ["src"],
-  "exclude": ["node_modules", "**/tests/*"]
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/common"
+    },
+    {
+      "path": "./packages/rsbuild-plugin"
+    },
+    {
+      "path": "./packages/vite-plugin"
+    }
+  ]
 }
