@@ -10,7 +10,6 @@
         "options": {
           "outputPath": "dist/packages/vite-plugin",
           "tsConfig": "packages/vite-plugin/tsconfig.lib.json",
-          "packageJson": "packages/vite-plugin/package.json",
           "main": "packages/vite-plugin/src/index.ts",
           "assets": ["packages/vite-plugin/*.md"]
         }
