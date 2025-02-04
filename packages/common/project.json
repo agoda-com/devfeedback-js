@@ -12,9 +12,7 @@
           "tsConfig": "packages/common/tsconfig.lib.json",
           "packageJson": "packages/common/package.json",
           "main": "packages/common/src/index.ts",
-          "assets": ["packages/common/*.md"],
-          "buildableProjectDepsInPackageJsonType": "dependencies",
-          "updateBuildableProjectDepsInPackageJson": true
+          "assets": ["packages/common/*.md"]
         }
       },
       "publish": {
