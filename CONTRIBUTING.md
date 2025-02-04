@@ -38,6 +38,14 @@ Remember, we're all about that F5 Experience here. Our goal is to make the devel
 1. **Setup Should Be a Breeze**: You should be able to clone the repo and get up and running faster than you can say "npm install".
 2. **Fast Feedback Loop**: We want our builds and tests to run faster than a promise resolves. If you find yourself waiting, something's wrong.
 
+Make sure to install nde 20+
+
+and then install nx.
+
+```bash
+npm install -g nx
+```
+
 ## Pull Request Process
 
 1. Update the README.md with details of changes to the interface, this includes new environment variables, exposed ports, useful file locations and container parameters. Documentation is like a love letter to your future self.

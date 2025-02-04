@@ -1,0 +1,21 @@
+{
+    "name": "agoda-devfeedback-webpack",
+    "version": "1.0.0",
+    "main": "./dist/index.js",
+    "module": "./dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "require": "./dist/index.js",
+        "import": "./dist/index.mjs",
+        "types": "./dist/index.d.ts"
+      }
+    },
+    "dependencies": {
+      "axios": "^1.7.4",
+      "ws": "^8.18.0"
+    },
+    "peerDependencies": {
+      "webpack": "^5.0.0"
+    }
+  }

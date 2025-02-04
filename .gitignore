@@ -1,2 +1,9 @@
 node_modules/
 lib/
+.pnpm-store
+.nx
+!.nx/workflows
+/build
+/coverage
+.npm/
+.profile

@@ -1,0 +1,26 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": ["es2020", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "agoda-devfeedback-common": ["packages/common/src/*"],
+      "agoda-devfeedback-vite": ["packages/vite-plugin/src/index.ts"],
+      "agoda-devfeedback-webpack": ["packages/webpack-plugin/src/index.ts"],
+      "agoda-devfeedback-rspack": ["packages/rspack-plugin/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}

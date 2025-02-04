@@ -1,0 +1,1 @@
+export { WebpackBuildStatsPlugin } from './WebpackBuildStatsPlugin';
