@@ -10,7 +10,6 @@
         "options": {
           "outputPath": "dist/packages/webpack-plugin",
           "tsConfig": "packages/webpack-plugin/tsconfig.lib.json",
-          "packageJson": "packages/webpack-plugin/package.json",
           "main": "packages/webpack-plugin/src/index.ts",
           "assets": ["packages/webpack-plugin/*.md"]
         }
