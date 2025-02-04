@@ -1,5 +1,5 @@
 {
-    "name": "agoda-devfeedback-vite",
+    "name": "@agoda-devfeedback/vite",
     "version": "1.0.0",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
@@ -12,9 +12,10 @@
       }
     },
     "dependencies": {
+      "@agoda-devfeedback/common": "*",
       "axios": "^1.7.4"
     },
     "peerDependencies": {
       "vite": "^4.0.0"
     }
-  }
+}

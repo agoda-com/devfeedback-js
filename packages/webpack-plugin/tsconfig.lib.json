@@ -1,13 +1,9 @@
 {
     "extends": "../../tsconfig.base.json",
     "compilerOptions": {
-      "outDir": "../../dist/out-tsc",
+      "outDir": "../../dist/packages/webpack-plugin",
       "declaration": true,
-      "types": ["node"],
-      "baseUrl": ".",
-      "paths": {
-        "../../common/*": ["../../packages/common/src/*"]
-      }
+      "types": ["node"]
     },
     "include": ["src/**/*.ts"],
     "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"],
@@ -16,4 +12,4 @@
         "path": "../common"
       }
     ]
-  }
+}

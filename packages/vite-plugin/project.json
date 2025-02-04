@@ -13,7 +13,8 @@
           "main": "packages/vite-plugin/src/index.ts",
           "tsConfig": "packages/vite-plugin/tsconfig.lib.json",
           "assets": ["packages/vite-plugin/*.md"]
-        }
+        },
+        "dependsOn": ["common:build"]
       },
       "publish": {
         "executor": "nx:run-commands",
@@ -38,4 +39,4 @@
       }
     },
     "tags": []
-  }
+}
