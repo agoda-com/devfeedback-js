@@ -1,10 +1,11 @@
 {
-  "name": "@agoda-devfeedback/source",
+  "name": "agoda-devfeedback",
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {},
   "private": true,
   "devDependencies": {
+    "@eslint/compat": "^1.2.6",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.19.0",
     "@nx/eslint": "^20.4.0",
