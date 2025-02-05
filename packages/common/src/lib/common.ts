@@ -1,8 +1,4 @@
-import type {
-  CommonMetadata,
-  ViteBuildData,
-  WebpackBuildData,
-} from './types';
+import type { CommonMetadata, ViteBuildData, RspackBuildData } from './types.ts';
 import { v1 as uuidv1 } from 'uuid';
 import os from 'os';
 import fs from 'fs';
@@ -13,7 +9,9 @@ import axios from 'axios';
 const UNKNOWN_VALUE = '<unknown>';
 
 const runGitCommand = (args: string[]): string | undefined => {
-  const [result] = safelyTry(() => spawnSync('git', args).stdout.toString().trim());
+  const { data: result } = safelyTry(() =>
+    spawnSync('git', args).stdout.toString().trim(),
+  );
   return result;
 };
 
@@ -29,8 +27,10 @@ export const getCommonMetadata = (
     ? repoName.substring(0, repoName.lastIndexOf('.'))
     : repoName;
 
-  const [gitUserName] = safelyTry(() => process.env['GITLAB_USER_LOGIN'] ?? process.env['GITHUB_ACTOR']);
-  const [osUsername] = safelyTry(() => os.userInfo().username);
+  const { data: gitUserName } = safelyTry(
+    () => process.env['GITLAB_USER_LOGIN'] ?? process.env['GITHUB_ACTOR'],
+  );
+  const { data: osUsername } = safelyTry(() => os.userInfo().username);
 
   return {
     id: uuidv1(),
@@ -58,15 +58,16 @@ export const getCommonMetadata = (
 
 const getEndpointFromType = (type: string) => {
   return {
-    webpack: process.env.WEBPACK_ENDPOINT || "http://compilation-metrics/webpack",
-    vite: process.env.VITE_ENDPOINT || "http://compilation-metrics/vite",
+    webpack: process.env.WEBPACK_ENDPOINT || 'http://compilation-metrics/webpack',
+    vite: process.env.VITE_ENDPOINT || 'http://compilation-metrics/vite',
+    rsbuild: process.env.WEBPACK_ENDPOINT || 'http://compilation-metrics/webpack',
   }[type];
 };
 
 const LOG_FILE = 'devfeedback.log';
 
-const sendData = async (endpoint: string, data: CommonMetadata): Promise<boolean> => {
-  const [_, error] = await safelyTry(() => axios.post(endpoint, data));
+const sendData = async (endpoint: string, metaData: CommonMetadata): Promise<boolean> => {
+  const { error } = await safelyTry(() => axios.post(endpoint, metaData));
   if (error) {
     fs.writeFileSync(LOG_FILE, JSON.stringify(error, Object.getOwnPropertyNames(error)));
     return false;
@@ -74,11 +75,13 @@ const sendData = async (endpoint: string, data: CommonMetadata): Promise<boolean
   return true;
 };
 
-export const sendBuildData = async (buildStats: WebpackBuildData | ViteBuildData) => {
+export const sendBuildData = async (buildStats: RspackBuildData | ViteBuildData) => {
   const endpoint = getEndpointFromType(buildStats.type);
 
   if (!endpoint) {
-    console.log(`No endpoint found for type ${buildStats.type}. Please set the environment variable.`);
+    console.log(
+      `No endpoint found for type ${buildStats.type}. Please set the environment variable.`,
+    );
     return;
   }
 
