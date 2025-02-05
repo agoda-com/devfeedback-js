@@ -1,5 +1,5 @@
 {
-    "Id": "webpack-build-001",
+    "Id": "webpack-plugin-001",
     "compilationHash": "a7f8d9e0fbc1245ab67d",
     "userName": "alice.smith",
     "cpuCount": 8,
@@ -29,6 +29,6 @@
     "commitSha": "b2c3d4e5f678901234567890abcdef1234567890",
     "nbrOfCachedModules": 1500,
     "nbrOfRebuiltModules": 350,
-    "customIdentifier": "webpack-build-job-98765"
+    "customIdentifier": "webpack-plugin-job-98765"
   }
   

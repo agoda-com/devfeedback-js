@@ -83,7 +83,7 @@ export const RsbuildBuildStatsPlugin: RsbuildPlugin = {
         ...getCommonMetadata(timeTaken, customIdentifier), // Pass timeTaken to getCommonMetadata
         type: 'rsbuild',
         compilationHash: getHash(stats),
-        rspackVersion, // Use the version from api.context.version
+        toolVersion: rspackVersion, // Use the version from api.context.version
         nbrOfCachedModules: getCachedModulesCount(stats),
         nbrOfRebuiltModules: getRebuiltModulesCount(stats),
         devFeedback: devFeedbackBuffer,

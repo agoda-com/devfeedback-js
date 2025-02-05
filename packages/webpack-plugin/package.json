@@ -1,0 +1,26 @@
+{
+  "name": "agoda-devfeedback-webpack",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!**/*.tsbuildinfo"
+  ],
+  "dependencies": {
+    "agoda-devfeedback-common": "^0.0.1",
+    "tslib": "^2.3.0",
+    "webpack": "^5.97.1",
+    "ws": "^8.18.0"
+  }
+}

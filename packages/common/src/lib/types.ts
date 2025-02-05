@@ -22,12 +22,16 @@ export interface CommonMetadata {
 }
 
 export interface RspackBuildData extends CommonMetadata {
-  type: 'rspack' | 'rsbuild' | 'rsbuild-dev';
-  rspackVersion: string | null;
+  type: 'rspack' | 'rsbuild' | 'webpack';
+  toolVersion: string | null;
   compilationHash: string | null;
   nbrOfCachedModules: number;
   nbrOfRebuiltModules: number;
   devFeedback?: DevFeedbackEvent[];
+}
+
+export interface WebpackBuildData extends Omit<RspackBuildData, 'type'> {
+  type: 'webpack';
 }
 
 export interface DevFeedbackEvent {

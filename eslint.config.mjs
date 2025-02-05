@@ -15,7 +15,7 @@ const compat = new FlatCompat({
   recommendedConfig: js.configs.recommended,
   allConfig: js.configs.all,
 });
-const gitignorePath = path.resolve(__dirname, ".gitignore");
+const gitignorePath = path.resolve(__dirname, '.gitignore');
 
 export default [
   includeIgnoreFile(gitignorePath),

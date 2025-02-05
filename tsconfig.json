@@ -11,6 +11,9 @@
     },
     {
       "path": "./packages/vite-plugin"
+    },
+    {
+      "path": "./packages/webpack-plugin"
     }
   ]
 }

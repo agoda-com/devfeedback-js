@@ -12,7 +12,7 @@
     ],
     "sharedGlobals": ["{workspaceRoot}/.github/workflows/ci.yml"]
   },
-  "nxCloudId": "67a1d42937a3c345af6d91c2",
+  "nxCloudId": "67a30ce4ea3bd11b2aacdd63",
   "plugins": [
     {
       "plugin": "@nx/js/typescript",
@@ -56,7 +56,8 @@
   },
   "targetDefaults": {
     "test": {
-      "dependsOn": ["^build", "^build", "^build"]
+      "dependsOn": ["^build", "^build", "^build", "^build"]
     }
-  }
+  },
+  "defaultBase": "master"
 }
