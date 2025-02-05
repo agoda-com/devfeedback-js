@@ -1,5 +1,5 @@
 {
-  "name": "@agoda-devfeedback/vite-plugin",
+  "name": "agoda-devfeedback-vite",
   "version": "0.0.1",
   "type": "module",
   "main": "./dist/index.js",

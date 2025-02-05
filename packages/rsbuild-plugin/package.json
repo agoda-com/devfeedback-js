@@ -1,5 +1,5 @@
 {
-  "name": "@agoda-devfeedback/rsbuild-plugin",
+  "name": "agoda-devfeedback-rsbuild",
   "version": "0.0.1",
   "type": "module",
   "main": "./dist/index.js",
