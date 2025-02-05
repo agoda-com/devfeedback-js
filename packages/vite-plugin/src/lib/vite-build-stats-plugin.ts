@@ -2,8 +2,8 @@ import { type Plugin } from 'vite';
 import { NormalizedOutputOptions, OutputBundle } from 'rollup';
 import { Blob } from 'node:buffer';
 
-import type { ViteBuildData, ViteBundleStats } from '@agoda-devfeedback/common';
-import { getCommonMetadata, sendBuildData } from '@agoda-devfeedback/common';
+import type { ViteBuildData, ViteBundleStats } from 'agoda-devfeedback-common';
+import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
 
 export function viteBuildStatsPlugin(
   customIdentifier: string | undefined = process.env.npm_lifecycle_event,

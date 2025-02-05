@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NormalizedOutputOptions, OutputBundle } from 'rollup';
 
 import { viteBuildStatsPlugin } from './vite-build-stats-plugin.js';
-import type { CommonMetadata, ViteBuildData } from '@agoda-devfeedback/common';
-import { getCommonMetadata, sendBuildData } from '@agoda-devfeedback/common';
+import type { CommonMetadata, ViteBuildData } from 'agoda-devfeedback-common';
+import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
 import { generateViteOutputBundleData } from '../utils/test-data-generator.js';
 
-vi.mock('@agoda-devfeedback/common', () => ({
+vi.mock('agoda-devfeedback-common', () => ({
   getCommonMetadata: vi.fn(),
   sendBuildData: vi.fn(),
 }));

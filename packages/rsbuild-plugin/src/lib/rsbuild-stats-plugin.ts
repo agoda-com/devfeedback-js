@@ -4,8 +4,8 @@ import { RsbuildPlugin, RsbuildPluginAPI } from '@rsbuild/core';
 import { WebSocketServer } from 'ws';
 import path from 'path';
 import { createServer } from 'http';
-import { getCommonMetadata, sendBuildData } from '@agoda-devfeedback/common';
-import type { RspackBuildData, DevFeedbackEvent } from '@agoda-devfeedback/common';
+import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
+import type { RspackBuildData, DevFeedbackEvent } from 'agoda-devfeedback-common';
 import { Rspack, rspack } from '@rsbuild/core';
 
 export const RsbuildBuildStatsPlugin: RsbuildPlugin = {
