@@ -1,4 +1,9 @@
-import type { CommonMetadata, ViteBuildData, RspackBuildData } from './types.ts';
+import type {
+  CommonMetadata,
+  ViteBuildData,
+  RspackBuildData,
+  WebpackBuildData,
+} from './types.ts';
 import { v1 as uuidv1 } from 'uuid';
 import os from 'os';
 import fs from 'fs';
@@ -75,7 +80,9 @@ const sendData = async (endpoint: string, metaData: CommonMetadata): Promise<boo
   return true;
 };
 
-export const sendBuildData = async (buildStats: RspackBuildData | ViteBuildData) => {
+export const sendBuildData = async (
+  buildStats: RspackBuildData | ViteBuildData | WebpackBuildData,
+) => {
   const endpoint = getEndpointFromType(buildStats.type);
 
   if (!endpoint) {

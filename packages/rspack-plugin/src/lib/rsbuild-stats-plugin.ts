@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { RsbuildPlugin, RsbuildPluginAPI } from '@rsbuild/core';
 import { WebSocketServer } from 'ws';
@@ -120,6 +119,7 @@ export const RsbuildBuildStatsPlugin: RsbuildPlugin = {
         );
       } catch (err) {
         // Ignore parse errors
+        console.error('[DevFeedback] Error parsing incoming WebSocket message:', err);
       }
     }
 

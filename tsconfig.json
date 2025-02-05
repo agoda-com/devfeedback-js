@@ -7,7 +7,7 @@
       "path": "./packages/common"
     },
     {
-      "path": "./packages/rsbuild-plugin"
+      "path": "./packages/rspack-plugin"
     },
     {
       "path": "./packages/vite-plugin"
