@@ -8,27 +8,42 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - name: Checkout the main branch
+        uses: actions/checkout@v4
         with:
-          node-version: 16
-      - run: npm ci
-      - run: npm test
+          fetch-depth: 0
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: 'npm'
+      - name: Install packages
+        run: npm ci --legacy-peer-deps
+      - name: Sets the base and head SHAs for the nx affected commands in CI
+        uses: nrwl/nx-set-shas@v4
+      # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
+      # - run: npx nx-cloud record -- echo Hello World
+      # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
+      - name: Build affected libs
+        run: npx nx affected -t test build
+      - name: Run nx release
+        run: |
+          npx nx release --skip-publish
 
 
-  publish-npm:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 16
-          registry-url: https://registry.npmjs.org/
-      - run: npm ci
-      - run: npm run build
-      - run: npm run build-cjs
-      - run: npm run build-esm
-      - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+  # publish-npm:
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - uses: actions/setup-node@v3
+  #       with:
+  #         node-version: 16
+  #         registry-url: https://registry.npmjs.org/
+  #     - run: npm ci
+  #     - run: npm run build
+  #     - run: npm run build-cjs
+  #     - run: npm run build-esm
+  #     - run: npm publish
+  #       env:
+  #         NODE_AUTH_TOKEN: ${{secrets.npm_token}}

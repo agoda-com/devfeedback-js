@@ -1,17 +1,16 @@
-import type { CommonMetadata, WebpackBuildData } from '../src/types';
-import { WebpackBuildStatsPlugin } from '../src/WebpackBuildStatsPlugin';
-import { getCommonMetadata, sendBuildData } from '../src/common';
-import type { Compiler, Stats, Compilation } from 'webpack';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import type { CommonMetadata, WebpackBuildData } from 'agoda-devfeedback-common';
+import { WebpackBuildStatsPlugin } from './webpack-build-stats-plugin.js';
+import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
+import type { Compiler, Stats } from 'webpack';
 
-jest.mock('../src/common', () => ({
-  getCommonMetadata: jest.fn(),
-  sendBuildData: jest.fn(),
+vi.mock('agoda-devfeedback-common', () => ({
+  getCommonMetadata: vi.fn(),
+  sendBuildData: vi.fn(),
 }));
 
-const mockedGetCommonMetadata = getCommonMetadata as jest.MockedFunction<
-  typeof getCommonMetadata
->;
-const mockedSendBuildData = sendBuildData as jest.MockedFunction<typeof sendBuildData>;
+const mockedGetCommonMetadata = getCommonMetadata as unknown as ReturnType<typeof vi.fn>;
+const mockedSendBuildData = sendBuildData as unknown as ReturnType<typeof vi.fn>;
 
 /**
  * Provide a more complete mock of the Webpack compiler,
@@ -21,16 +20,16 @@ const createMockCompiler = () => {
   return {
     hooks: {
       watchRun: {
-        tap: jest.fn(),
+        tap: vi.fn(),
       },
       compile: {
-        tap: jest.fn(),
+        tap: vi.fn(),
       },
       done: {
-        tap: jest.fn(),
+        tap: vi.fn(),
       },
       compilation: {
-        tap: jest.fn(),
+        tap: vi.fn(),
       },
     },
   };
@@ -41,7 +40,7 @@ describe('WebpackBuildStatsPlugin', () => {
   let plugin: WebpackBuildStatsPlugin;
 
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     mockedCompiler = createMockCompiler();
     plugin = new WebpackBuildStatsPlugin();
   });
@@ -58,20 +57,20 @@ describe('WebpackBuildStatsPlugin', () => {
     // Ensure the plugin registered callbacks on these hooks
     expect(mockedCompiler.hooks.watchRun.tap).toHaveBeenCalledWith(
       'WebpackBuildStatsPlugin',
-      expect.any(Function)
+      expect.any(Function),
     );
     expect(mockedCompiler.hooks.compile.tap).toHaveBeenCalledWith(
       'WebpackBuildStatsPlugin',
-      expect.any(Function)
+      expect.any(Function),
     );
     expect(mockedCompiler.hooks.done.tap).toHaveBeenCalledWith(
       'WebpackBuildStatsPlugin',
-      expect.any(Function)
+      expect.any(Function),
     );
     // The plugin also uses `compilation.tap(...)` internally
     expect(mockedCompiler.hooks.compilation.tap).toHaveBeenCalledWith(
       'WebpackBuildStatsPlugin',
-      expect.any(Function)
+      expect.any(Function),
     );
   });
 
@@ -82,7 +81,7 @@ describe('WebpackBuildStatsPlugin', () => {
 
     // Mock the build data
     mockedGetCommonMetadata.mockReturnValue({} as CommonMetadata);
-    mockedSendBuildData.mockResolvedValue();
+    mockedSendBuildData.mockResolvedValue(undefined);
 
     const mockedStats: Partial<Stats> = {
       toJson: () => ({
@@ -111,7 +110,7 @@ describe('WebpackBuildStatsPlugin', () => {
     expect(buildDataArg).toMatchObject({
       type: 'webpack',
       compilationHash: 'blahblahblacksheep',
-      webpackVersion: '5.51.1',
+      toolVersion: '5.51.1',
       nbrOfCachedModules: 1,
       nbrOfRebuiltModules: 1,
     });
@@ -139,7 +138,7 @@ describe('WebpackBuildStatsPlugin', () => {
 
     // Mock the build data
     mockedGetCommonMetadata.mockReturnValue({} as CommonMetadata);
-    mockedSendBuildData.mockResolvedValue();
+    mockedSendBuildData.mockResolvedValue(undefined);
 
     // Act
     const doneHookCallback = mockedCompiler.hooks.done.tap.mock.calls[0][1];

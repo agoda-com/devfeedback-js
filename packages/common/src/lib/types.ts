@@ -21,13 +21,17 @@ export interface CommonMetadata {
   customIdentifier: string | null;
 }
 
-export interface WebpackBuildData extends CommonMetadata {
-  type: 'webpack';
-  webpackVersion: string | null;
+export interface RspackBuildData extends CommonMetadata {
+  type: 'rspack' | 'rsbuild';
+  toolVersion: string | null;
   compilationHash: string | null;
   nbrOfCachedModules: number;
   nbrOfRebuiltModules: number;
   devFeedback?: DevFeedbackEvent[];
+}
+
+export interface WebpackBuildData extends Omit<RspackBuildData, 'type'> {
+  type: 'webpack';
 }
 
 export interface DevFeedbackEvent {
@@ -40,12 +44,12 @@ export interface DevFeedbackEvent {
 }
 
 export interface ViteBundleStats {
-  bootstrapChunkSizeBytes?: number
-  bootstrapChunkSizeLimitBytes?: number
+  bootstrapChunkSizeBytes?: number;
+  bootstrapChunkSizeLimitBytes?: number;
 }
 
 export interface ViteBuildData extends CommonMetadata {
   type: 'vite';
   viteVersion: string | null;
-  bundleStats?: ViteBundleStats
+  bundleStats?: ViteBundleStats;
 }

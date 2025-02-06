@@ -1,11 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Compiler, Stats, StatsCompilation, Compilation } from 'webpack';
 import webpack from 'webpack';
-import WebSocket from 'ws';    
+import { WebSocketServer } from 'ws';
 import path from 'path';
 import { createServer, Server } from 'http';
 
-import { getCommonMetadata, sendBuildData } from './common';
-import type { WebpackBuildData, DevFeedbackEvent } from './types';
+import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
+import type { WebpackBuildData, DevFeedbackEvent } from 'agoda-devfeedback-common';
 
 export class WebpackBuildStatsPlugin {
   private readonly customIdentifier: string | undefined;
@@ -17,7 +18,7 @@ export class WebpackBuildStatsPlugin {
   private devFeedbackBuffer: DevFeedbackEvent[] = [];
 
   // Local WebSocket server
-  private wsServer: WebSocket.Server;
+  private wsServer: WebSocketServer;
   private httpServer: Server;
 
   constructor(customIdentifier: string | undefined = process.env.npm_lifecycle_event) {
@@ -25,7 +26,7 @@ export class WebpackBuildStatsPlugin {
 
     // Start a tiny HTTP + WS server for dev feedback
     this.httpServer = createServer();
-    this.wsServer = new WebSocket.Server({ server: this.httpServer });
+    this.wsServer = new WebSocketServer({ server: this.httpServer });
 
     this.httpServer.listen(0, () => {
       const port = (this.httpServer.address() as any)?.port;
@@ -47,7 +48,7 @@ export class WebpackBuildStatsPlugin {
      */
     compiler.hooks.watchRun.tap('WebpackBuildStatsPlugin', (c: any) => {
       this.buildStartTime = Date.now(); // The reference time (ms since epoch)
-      this.devFeedbackBuffer = [];      // Clear old events for a new build
+      this.devFeedbackBuffer = []; // Clear old events for a new build
 
       // If "modifiedFiles" is available (Rspack style):
       const changedFiles = c.modifiedFiles || [];
@@ -76,7 +77,7 @@ export class WebpackBuildStatsPlugin {
         ...getCommonMetadata(jsonStats.time ?? -1, this.customIdentifier),
         type: 'webpack',
         compilationHash: jsonStats.hash ?? null,
-        webpackVersion: jsonStats.version ?? null,
+        toolVersion: jsonStats.version ?? null,
         nbrOfCachedModules: jsonStats.modules?.filter((m) => m.cached).length ?? 0,
         nbrOfRebuiltModules: jsonStats.modules?.filter((m) => m.built).length ?? 0,
 
@@ -91,18 +92,21 @@ export class WebpackBuildStatsPlugin {
     /**
      * 4) Inject client code as a runtime module
      */
-    compiler.hooks.compilation.tap('WebpackBuildStatsPlugin', (compilation: Compilation) => {
-      compilation.hooks.afterChunks.tap('WebpackBuildStatsPlugin', (chunks) => {
-        for (const chunk of chunks) {
-          if (chunk.canBeInitial()) {
-            compilation.addRuntimeModule(
-              chunk,
-              new DevFeedbackRuntimeModule(() => this.generateClientCode(), this.wsServer),
-            );
+    compiler.hooks.compilation.tap(
+      'WebpackBuildStatsPlugin',
+      (compilation: Compilation) => {
+        compilation.hooks.afterChunks.tap('WebpackBuildStatsPlugin', (chunks) => {
+          for (const chunk of chunks) {
+            if (chunk.canBeInitial()) {
+              compilation.addRuntimeModule(
+                chunk,
+                new DevFeedbackRuntimeModule(() => this.generateClientCode()),
+              );
+            }
           }
-        }
-      });
-    });
+        });
+      },
+    );
   }
 
   /**
@@ -135,10 +139,11 @@ export class WebpackBuildStatsPlugin {
       this.devFeedbackBuffer.push(parsed);
 
       console.log(
-        `[DevFeedback] Client event: ${parsed.type}, elapsedMs=${parsed.elapsedMs}`
+        `[DevFeedback] Client event: ${parsed.type}, elapsedMs=${parsed.elapsedMs}`,
       );
     } catch (err) {
       // parse error, ignore
+      console.error('[DevFeedback] Error parsing client message:', err);
     }
   }
 
@@ -198,10 +203,10 @@ export class WebpackBuildStatsPlugin {
   private normalizePath(filePath: string): string {
     return path.relative(process.cwd(), path.normalize(filePath));
   }
-   /**
+  /**
    * Close the underlying servers so tests (or the app) can shut down cleanly.
    */
-   public close() {
+  public close() {
     // Close WebSocket server
     this.wsServer.close();
     // Close HTTP server
@@ -214,15 +219,13 @@ export class WebpackBuildStatsPlugin {
  */
 class DevFeedbackRuntimeModule extends webpack.RuntimeModule {
   private generateFn: () => string;
-  private wsServer: WebSocket.Server;
 
-  constructor(generateFn: () => string, wsServer: WebSocket.Server) {
+  constructor(generateFn: () => string) {
     super('DevFeedbackRuntimeModule');
     this.generateFn = generateFn;
-    this.wsServer = wsServer;
   }
 
-  generate(): string {
+  override generate(): string {
     return this.generateFn();
   }
 }
