@@ -32,11 +32,6 @@ jobs:
       - name: Print Environment Info
         run: npx nx report
         shell: bash
-      
-      - run: npm ci --legacy-peer-deps
-
-      - name: Build
-        run: npx nx run-many --target=build 
 
       - name: Publish packages
         run: npx nx release publish
