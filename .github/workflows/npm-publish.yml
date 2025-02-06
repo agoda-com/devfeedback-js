@@ -35,11 +35,11 @@ jobs:
 
       - name: Extract version from tag
         id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Publish packages
-        run: npx nx release publish --version ${{ steps.get_version.outputs.VERSION }}
+        run: npx nx release ${{ steps.get_version.outputs.VERSION }}
         shell: bash
         env:
           NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
