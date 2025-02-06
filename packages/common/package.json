@@ -24,5 +24,8 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "repository": {
+    "url": "https://github.com/agoda-com/devfeedback-js"
   }
 }
