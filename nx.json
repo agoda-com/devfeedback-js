@@ -58,6 +58,5 @@
     "test": {
       "dependsOn": ["^build", "^build", "^build", "^build"]
     }
-  },
-  "defaultBase": "master"
+  }
 }
