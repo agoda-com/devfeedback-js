@@ -39,7 +39,10 @@ jobs:
         shell: bash
 
       - name: Publish packages
-        run: npx nx release ${{ steps.get_version.outputs.VERSION }}
+        run: |
+          git config --global user.email "ratchapol.an@gmail.com"
+          git config --global user.name "ratchapol-an"
+          npx nx release ${{ steps.get_version.outputs.VERSION }}
         shell: bash
         env:
           NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
