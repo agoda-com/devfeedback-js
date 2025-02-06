@@ -49,8 +49,5 @@
       }
     }
   },
-  "dependencies": {},
-  "publishConfig": {
-    "access": "public"
-  }
+  "dependencies": {}
 }
