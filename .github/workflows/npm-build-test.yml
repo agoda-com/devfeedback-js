@@ -42,8 +42,6 @@ jobs:
 
       - run: npm ci --legacy-peer-deps
 
-      - name: Full build temp
-        run: npx nx run-many --target=build
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       # - run: npx nx-cloud record -- echo Hello World
       # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
