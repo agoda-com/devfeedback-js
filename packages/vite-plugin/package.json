@@ -20,5 +20,8 @@
   "dependencies": {
     "agoda-devfeedback-common": "*",
     "tslib": "^2.8.1"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
