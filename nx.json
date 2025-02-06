@@ -51,10 +51,7 @@
   ],
   "release": {
     "version": {
-      "generatorOptions": {
-        "currentVersionResolver": "git-tag",
-        "specifierSource": "conventional-commits"
-      }
+      "preVersionCommand": "npx nx run-many -t build"
     }
   },
   "targetDefaults": {
