@@ -42,7 +42,8 @@ jobs:
         run: |
           git config --global user.email "ratchapol.an@gmail.com"
           git config --global user.name "ratchapol-an"
-          npx nx release ${{ steps.get_version.outputs.VERSION }}
+          npx nx release version ${{ steps.get_version.outputs.VERSION }} --git-tag false
+          npx nx release publish
         shell: bash
         env:
           NODE_AUTH_TOKEN: ${{ secrets.npm_token }}
