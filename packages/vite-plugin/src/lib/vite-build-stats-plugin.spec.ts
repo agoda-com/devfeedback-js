@@ -35,6 +35,9 @@ class MockResponse {
   end = vi.fn();
 }
 
+// Add type for middleware handler
+type MiddlewareHandler = (req: MockRequest, res: MockResponse, next: () => void) => void;
+
 describe('viteBuildStatsPlugin', () => {
   const bootstrapChunkSizeLimitKb = 2_000;
   let timeCounter: number;
@@ -71,6 +74,7 @@ describe('viteBuildStatsPlugin', () => {
         bootstrapChunkSizeBytes: 430,
         bootstrapChunkSizeLimitBytes: bootstrapChunkSizeLimitKb * 1000,
       },
+      file: null, // Add missing file property
     } as ViteBuildData;
 
     it('should send the correct build data - happy path', async () => {
@@ -80,7 +84,13 @@ describe('viteBuildStatsPlugin', () => {
       const bundle = generateViteOutputBundleData(true);
 
       (plugin.buildStart as () => void).bind({ meta: { rollupVersion: '1.2.3' } })();
-      (plugin.generateBundle as any)({} as NormalizedOutputOptions, bundle);
+      // Fix any type by using proper type casting
+      (
+        plugin.generateBundle as (
+          opts: NormalizedOutputOptions,
+          bundle: OutputBundle,
+        ) => void
+      )({} as NormalizedOutputOptions, bundle);
       (plugin.buildEnd as () => void)();
       await (plugin.closeBundle as () => Promise<void>)();
 
@@ -111,9 +121,10 @@ describe('viteBuildStatsPlugin', () => {
       const caseSpecificExpected = {
         ...expected,
         bundleStats: {
-          generateOutputBundleData: undefined,
+          bootstrapChunkSizeBytes: undefined, // Fix property name
           bootstrapChunkSizeLimitBytes: undefined,
         },
+        file: null, // Add missing file property
       };
 
       expect(mockedGetCommonMetadata).toHaveBeenCalledWith(100, 'my custom identifier');
@@ -149,7 +160,11 @@ describe('viteBuildStatsPlugin', () => {
 
       const caseSpecificExpected = {
         ...expected,
-        bundleStats: { ...expected.bundleStats, bootstrapChunkSizeLimitBytes: undefined },
+        bundleStats: {
+          bootstrapChunkSizeBytes: 430,
+          bootstrapChunkSizeLimitBytes: undefined,
+        },
+        file: null, // Add missing file property
       };
 
       expect(mockedGetCommonMetadata).toHaveBeenCalledWith(100, 'default_value');
@@ -158,6 +173,19 @@ describe('viteBuildStatsPlugin', () => {
   });
 
   describe('HMR timing functionality', () => {
+    beforeEach(() => {
+      // Mock process.cwd globally for all HMR tests
+      vi.stubGlobal('process', {
+        ...process,
+        env: process.env,
+        cwd: () => '/test-root',
+      });
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
     it('should register file watcher on server configure', () => {
       const watcherSpy = vi.spyOn(mockWatcher, 'on');
       plugin.configureServer?.(mockServer as ViteDevServer);
@@ -168,7 +196,7 @@ describe('viteBuildStatsPlugin', () => {
       plugin.configureServer?.(mockServer as ViteDevServer);
 
       vi.spyOn(Date, 'now').mockImplementation(() => timeCounter);
-      vi.spyOn(process, 'cwd').mockReturnValue('/test-root');
+      // Remove individual process.cwd mock since it's now handled globally
 
       const testFile = path.join('/test-root', 'path/to/file.js');
       mockWatcher.emit('change', testFile);
@@ -188,10 +216,14 @@ describe('viteBuildStatsPlugin', () => {
     it('should handle middleware requests for timing data', async () => {
       plugin.configureServer?.(mockServer as ViteDevServer);
 
-      const testFile = 'src/test.js';
+      // Use the same path format as what would come from Vite
+      const testFile = '/test-root/src/test.js';
       timeCounter = 1000;
+
+      // Emit change event with full path
       mockWatcher.emit('change', testFile);
 
+      // Advance time for client timestamp
       timeCounter = 2000;
 
       const req = new MockRequest('/__vite_timing_hmr_complete');
@@ -205,13 +237,18 @@ describe('viteBuildStatsPlugin', () => {
         });
       });
 
-      const middlewareHandler = (mockServer.middlewares?.use as any).mock.calls[0][0];
+      // Fix any type by using proper typing for middleware handler
+      const middlewareHandler = (
+        mockServer.middlewares?.use as jest.Mock<void, [MiddlewareHandler]>
+      ).mock.calls[0][0] as MiddlewareHandler;
+
       middlewareHandler(req, res, next);
 
+      // Send normalized path in client request (as Vite would do)
       req.emit(
         'data',
         JSON.stringify({
-          file: testFile,
+          file: 'src/test.js', // This should match the normalized path
           clientTimestamp: timeCounter,
         }),
       );
@@ -226,6 +263,7 @@ describe('viteBuildStatsPlugin', () => {
       const responseData = JSON.parse(res.end.mock.calls[0][0]);
       expect(responseData.success).toBe(true);
 
+      // Verify the change was processed and removed from the map
       const changeMap = plugin._TEST_getChangeMap?.();
       expect(Array.from(changeMap!.values())).toHaveLength(0);
     });
