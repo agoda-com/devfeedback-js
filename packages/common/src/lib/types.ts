@@ -52,4 +52,5 @@ export interface ViteBuildData extends CommonMetadata {
   type: 'vite';
   viteVersion: string | null;
   bundleStats?: ViteBundleStats;
+  file: string | null;
 }
