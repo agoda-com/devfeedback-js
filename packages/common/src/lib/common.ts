@@ -102,5 +102,7 @@ export const sendBuildData = async (
     return;
   }
 
-  console.log(`Your build stats has successfully been sent.`);
+  console.log(
+    `Your build stats has successfully been sent to ${endpoint} for ${buildStats.type}.`,
+  );
 };

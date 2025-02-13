@@ -96,7 +96,7 @@ export function viteBuildStatsPlugin(
 
                 const metricsData: ViteBuildData = {
                   ...getCommonMetadata(totalTime, customIdentifier),
-                  type: 'vite',
+                  type: 'vite-hmr',
                   viteVersion: rollupVersion ?? null,
                   bundleStats: {
                     bootstrapChunkSizeBytes: undefined,
@@ -111,7 +111,7 @@ export function viteBuildStatsPlugin(
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({ success: true }));
               } else {
-                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.writeHead(404, { 'Content-Type': 'application/json' });
                 res.end(
                   JSON.stringify({
                     success: false,
@@ -123,7 +123,7 @@ export function viteBuildStatsPlugin(
               }
             } catch (err) {
               console.error('[vite-timing] Error processing timing data:', err);
-              res.writeHead(200, { 'Content-Type': 'application/json' });
+              res.writeHead(500, { 'Content-Type': 'application/json' });
               res.end(
                 JSON.stringify({
                   success: false,
