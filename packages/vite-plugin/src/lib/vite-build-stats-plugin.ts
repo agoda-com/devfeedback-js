@@ -96,7 +96,7 @@ export function viteBuildStatsPlugin(
 
                 const metricsData: ViteBuildData = {
                   ...getCommonMetadata(totalTime, customIdentifier),
-                  type: 'vite-hmr',
+                  type: 'vitehmr',
                   viteVersion: rollupVersion ?? null,
                   bundleStats: {
                     bootstrapChunkSizeBytes: undefined,

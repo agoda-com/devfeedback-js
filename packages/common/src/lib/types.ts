@@ -49,7 +49,7 @@ export interface ViteBundleStats {
 }
 
 export interface ViteBuildData extends CommonMetadata {
-  type: string;
+  type: 'vite' | 'vitehmr';
   viteVersion: string | null;
   bundleStats?: ViteBundleStats;
   file: string | null;
