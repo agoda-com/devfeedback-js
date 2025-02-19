@@ -8,7 +8,7 @@ import { v1 as uuidv1 } from 'uuid';
 import os from 'os';
 import fs from 'fs';
 import { spawnSync } from 'child_process';
-import safelyTry from 'safely-try';
+import safelyTry from './safely-retry.js';
 import axios from 'axios';
 
 const UNKNOWN_VALUE = '<unknown>';
