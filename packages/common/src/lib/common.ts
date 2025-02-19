@@ -65,6 +65,7 @@ const getEndpointFromType = (type: string) => {
   return {
     webpack: process.env.WEBPACK_ENDPOINT || 'http://compilation-metrics/webpack',
     vite: process.env.VITE_ENDPOINT || 'http://compilation-metrics/vite',
+    vitehmr: process.env.VITE_ENDPOINT || 'http://compilation-metrics/vite',
     rsbuild: process.env.WEBPACK_ENDPOINT || 'http://compilation-metrics/webpack',
   }[type];
 };
@@ -102,5 +103,7 @@ export const sendBuildData = async (
     return;
   }
 
-  console.log(`Your build stats has successfully been sent.`);
+  console.log(
+    `Your build stats has successfully been sent to ${endpoint} for ${buildStats.type}.`,
+  );
 };
