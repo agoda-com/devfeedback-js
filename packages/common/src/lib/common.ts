@@ -8,7 +8,7 @@ import { v1 as uuidv1 } from 'uuid';
 import os from 'os';
 import fs from 'fs';
 import { spawnSync } from 'child_process';
-import safelyTry from 'safely-try';
+import safelyTry from './safely-retry.js';
 import axios from 'axios';
 
 const UNKNOWN_VALUE = '<unknown>';
@@ -66,7 +66,8 @@ const getEndpointFromType = (type: string) => {
     webpack: process.env.WEBPACK_ENDPOINT || 'http://compilation-metrics/webpack',
     vite: process.env.VITE_ENDPOINT || 'http://compilation-metrics/vite',
     vitehmr: process.env.VITE_ENDPOINT || 'http://compilation-metrics/vite',
-    rsbuild: process.env.WEBPACK_ENDPOINT || 'http://compilation-metrics/webpack',
+    rsbuild: process.env.RSPACK_ENDPOINT || 'http://compilation-metrics/webpack',
+    rspack: process.env.RSPACK_ENDPOINT || 'http://compilation-metrics/webpack',
   }[type];
 };
 
