@@ -67,7 +67,7 @@ export class WebpackBuildStatsPlugin {
     /**
      * 3) done => record "compileDone" and then send build stats with devFeedback
      */
-    compiler.hooks.done.tap('WebpackBuildStatsPlugin', async (stats: Stats) => {
+    compiler.hooks.done.tapPromise('WebpackBuildStatsPlugin', async (stats: Stats) => {
       this.recordEvent({ type: 'compileDone' });
 
       // Original build-stats logic

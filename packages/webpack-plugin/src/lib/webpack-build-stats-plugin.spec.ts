@@ -26,7 +26,7 @@ const createMockCompiler = () => {
         tap: vi.fn(),
       },
       done: {
-        tap: vi.fn(),
+        tapPromise: vi.fn(),
       },
       compilation: {
         tap: vi.fn(),
@@ -63,7 +63,7 @@ describe('WebpackBuildStatsPlugin', () => {
       'WebpackBuildStatsPlugin',
       expect.any(Function),
     );
-    expect(mockedCompiler.hooks.done.tap).toHaveBeenCalledWith(
+    expect(mockedCompiler.hooks.done.tapPromise).toHaveBeenCalledWith(
       'WebpackBuildStatsPlugin',
       expect.any(Function),
     );
@@ -97,7 +97,7 @@ describe('WebpackBuildStatsPlugin', () => {
 
     // Act
     // Retrieve the callback the plugin registered with the "done" hook
-    const doneHookCallback = mockedCompiler.hooks.done.tap.mock.calls[0][1];
+    const doneHookCallback = mockedCompiler.hooks.done.tapPromise.mock.calls[0][1];
     // Simulate a completed build
     await doneHookCallback(mockedStats);
 
@@ -141,7 +141,7 @@ describe('WebpackBuildStatsPlugin', () => {
     mockedSendBuildData.mockResolvedValue(undefined);
 
     // Act
-    const doneHookCallback = mockedCompiler.hooks.done.tap.mock.calls[0][1];
+    const doneHookCallback = mockedCompiler.hooks.done.tapPromise.mock.calls[0][1];
     await doneHookCallback(mockedStats);
 
     // Assert
