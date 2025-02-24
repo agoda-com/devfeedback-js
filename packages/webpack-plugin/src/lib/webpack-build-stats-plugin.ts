@@ -71,7 +71,7 @@ export class WebpackBuildStatsPlugin {
       this.recordEvent({ type: 'compileDone' });
 
       // Original build-stats logic
-      const jsonStats: StatsCompilation = stats.toJson();
+      const jsonStats: StatsCompilation = stats.toJson({ preset: 'none', timings: true, hash: true, version: true, modules: true });
 
       const buildStats: WebpackBuildData = {
         ...getCommonMetadata(jsonStats.time ?? -1, this.customIdentifier),
