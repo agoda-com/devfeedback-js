@@ -1,2 +1,2 @@
-export * from './lib/rsbuild-stats-plugin.js';
-export * from './lib/rspack-stats-plugin.js';
+export { RsbuildBuildStatsPlugin } from './lib/rsbuild-stats-plugin';
+export { RspackBuildStatsPlugin } from './lib/rspack-stats-plugin';

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type { CommonMetadata, WebpackBuildData } from 'agoda-devfeedback-common';
-import { WebpackBuildStatsPlugin } from './webpack-build-stats-plugin.js';
+import { WebpackBuildStatsPlugin } from './webpack-build-stats-plugin';
 import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
 import type { Compiler, Stats } from 'webpack';
 

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RsbuildBuildStatsPlugin } from './rsbuild-stats-plugin.js';
+import { RsbuildBuildStatsPlugin } from './rsbuild-stats-plugin';
 import { RsbuildPluginAPI } from '@rsbuild/core';
 import { Rspack } from '@rsbuild/core';
 import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
