@@ -10,6 +10,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - name: setup
         uses: ./.actions/setup
         with:
@@ -21,6 +25,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - name: setup
         uses: ./.actions/setup
         with:
@@ -32,6 +40,10 @@ jobs:
   types:
     runs-on: ubuntu-latest
     steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - name: setup
         uses: ./.actions/setup
         with:

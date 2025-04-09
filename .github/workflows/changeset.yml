@@ -20,6 +20,10 @@ jobs:
       pull-requests: write
       issues: read
     steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - name: setup
         uses: ./.actions/setup
         with:

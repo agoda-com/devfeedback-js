@@ -9,11 +9,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 2
-
     - name: turbo
       uses: dtinth/setup-github-actions-caching-for-turbo@v1
 
