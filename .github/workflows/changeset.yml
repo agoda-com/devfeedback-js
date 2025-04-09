@@ -1,0 +1,37 @@
+name: Changeset
+
+on:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: changeset
+  cancel-in-progress: true
+
+jobs:
+  changeset:
+    name: changeset
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      packages: write
+      pull-requests: write
+      issues: read
+    steps:
+      - name: setup
+        uses: ./.actions/setup
+        with:
+          cache-key: changeset
+      - name: build
+        run: pnpm build --filter='./packages/*'
+      - name: changesets
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          publish: pnpm changeset publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.npm_token }}
+          NPM_CONFIG_PROVENANCE: true

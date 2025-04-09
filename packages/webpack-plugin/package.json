@@ -1,27 +1,39 @@
 {
   "name": "agoda-devfeedback-webpack",
   "version": "2.0.1",
-  "type": "commonjs",
   "main": "./dist/index.js",
-  "module": "./dist/index.js",
+  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     "./package.json": "./package.json",
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     }
   },
   "files": [
     "dist",
     "!**/*.tsbuildinfo"
   ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "check-types": "tsc --noEmit",
+    "test": "vitest"
+  },
   "dependencies": {
-    "agoda-devfeedback-common": "^0.0.1",
-    "tslib": "^2.3.0",
-    "webpack": "^5.97.1",
-    "ws": "^8.18.0"
+    "agoda-devfeedback-common": "workspace:*",
+    "tslib": "2.8.1",
+    "ws": "8.18.1"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/ws": "8.18.1",
+    "webpack": "5.99.5"
+  },
+  "peerDependencies": {
+    "webpack": ">=5.0.0"
   },
   "publishConfig": {
     "access": "public"

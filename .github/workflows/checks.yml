@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: setup
+        uses: ./.actions/setup
+        with:
+          cache-key: ci-build
+
+      - name: build
+        run: pnpm build
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: setup
+        uses: ./.actions/setup
+        with:
+          cache-key: ci-test
+
+      - name: test
+        run: pnpm test
+
+  types:
+    runs-on: ubuntu-latest
+    steps:
+      - name: setup
+        uses: ./.actions/setup
+        with:
+          cache-key: ci-types
+
+      - name: types
+        run: pnpm check-types
