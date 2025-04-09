@@ -10,7 +10,7 @@ env:
   TURBO_TELEMETRY_DISABLED: 1
 
 jobs:
-  build:
+  build-test:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -20,21 +20,9 @@ jobs:
       - name: setup
         uses: ./.actions/setup
         with:
-          cache-key: ci-build
+          cache-key: ci-build-test
       - name: build
         run: pnpm build
-
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-      - name: setup
-        uses: ./.actions/setup
-        with:
-          cache-key: ci-test
       - name: test
         run: pnpm test
 
