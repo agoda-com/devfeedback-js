@@ -1,7 +1,7 @@
 import { Compiler, Stats } from '@rspack/core';
 import { WebSocketServer, Server as WebSocketServerType } from 'ws';
-import path from 'path';
-import { createServer, Server as HttpServerType } from 'http';
+import path from 'node:path';
+import { createServer, Server as HttpServerType } from 'node:http';
 import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
 import type { RspackBuildData, DevFeedbackEvent } from 'agoda-devfeedback-common';
 

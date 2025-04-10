@@ -2,8 +2,8 @@
 import type { Compiler, Stats, StatsCompilation, Compilation } from 'webpack';
 import webpack from 'webpack';
 import { WebSocketServer } from 'ws';
-import path from 'path';
-import { createServer, Server } from 'http';
+import path from 'node:path';
+import { createServer, Server } from 'node:http';
 
 import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
 import type { WebpackBuildData, DevFeedbackEvent } from 'agoda-devfeedback-common';

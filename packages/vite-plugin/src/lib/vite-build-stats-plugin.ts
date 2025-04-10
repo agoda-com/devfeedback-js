@@ -1,7 +1,7 @@
 import { type Plugin, ViteDevServer } from 'vite';
 import { NormalizedOutputOptions, OutputBundle } from 'rollup';
 import { Blob } from 'node:buffer';
-import path from 'path';
+import path from 'node:path';
 import type { IncomingMessage, ServerResponse } from 'http';
 
 import type { ViteBuildData, ViteBundleStats } from 'agoda-devfeedback-common';

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NormalizedOutputOptions, OutputBundle } from 'rollup';
 import { EventEmitter } from 'events';
-import path from 'path';
+import path from 'node:path';
 import type { ViteDevServer } from 'vite';
 
-import { viteBuildStatsPlugin } from './vite-build-stats-plugin.js';
+import { viteBuildStatsPlugin } from './vite-build-stats-plugin';
 import type { CommonMetadata, ViteBuildData } from 'agoda-devfeedback-common';
 import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
 import { generateViteOutputBundleData } from '../utils/test-data-generator.js';

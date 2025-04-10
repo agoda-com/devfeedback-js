@@ -5,10 +5,10 @@ import type {
   WebpackBuildData,
 } from './types.ts';
 import { v1 as uuidv1 } from 'uuid';
-import os from 'os';
-import fs from 'fs';
-import { spawnSync } from 'child_process';
-import safelyTry from './safely-retry.js';
+import os from 'node:os';
+import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import safelyTry from './safely-retry';
 import axios from 'axios';
 
 const UNKNOWN_VALUE = '<unknown>';
