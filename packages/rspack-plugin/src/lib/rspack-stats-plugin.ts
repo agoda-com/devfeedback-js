@@ -1,4 +1,4 @@
-import { Compiler, Stats } from '@rspack/core';
+import { Compiler, Stats, StatsCompilation } from '@rspack/core';
 import { WebSocketServer, Server as WebSocketServerType } from 'ws';
 import path from 'path';
 import { createServer, Server as HttpServerType } from 'http';
@@ -65,6 +65,10 @@ class RspackBuildStatsPlugin {
   }
 
   private async processStats(stats: Stats) {
+    const statsJson = stats.toJson({
+      preset: 'none',
+      modules: true,
+    });
     this.recordEvent(stats, { type: 'compileDone' });
 
     const startTime = stats.startTime;
@@ -76,8 +80,8 @@ class RspackBuildStatsPlugin {
       type: 'rspack',
       compilationHash: stats.hash || '',
       toolVersion: this.toolVersion,
-      nbrOfCachedModules: this.getCachedModulesCount(stats),
-      nbrOfRebuiltModules: this.getRebuiltModulesCount(stats),
+      nbrOfCachedModules: this.getCachedModulesCount(statsJson),
+      nbrOfRebuiltModules: this.getRebuiltModulesCount(statsJson),
       devFeedback: this.devFeedbackBuffer,
     };
 
@@ -114,12 +118,12 @@ class RspackBuildStatsPlugin {
     return path.relative(process.cwd(), path.normalize(filePath));
   }
 
-  private getCachedModulesCount(stats: Stats): number {
-    return stats.toJson().modules?.filter((m) => m.cached).length ?? 0;
+  private getCachedModulesCount(stats: StatsCompilation): number {
+    return stats.modules?.filter((m) => m.cached).length ?? 0;
   }
 
-  private getRebuiltModulesCount(stats: Stats): number {
-    return stats.toJson().modules?.filter((m) => m.built).length ?? 0;
+  private getRebuiltModulesCount(stats: StatsCompilation): number {
+    return stats.modules?.filter((m) => m.built).length ?? 0;
   }
 }
 
