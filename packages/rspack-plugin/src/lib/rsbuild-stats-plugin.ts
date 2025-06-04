@@ -89,7 +89,7 @@ export const RsbuildBuildStatsPlugin: RsbuildPlugin = {
       };
 
       // Send everything to your existing endpoint
-      await sendBuildData(buildStats);
+      sendBuildData(buildStats);
     }
 
     // Helper function to record events
