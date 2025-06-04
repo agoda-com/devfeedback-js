@@ -30,7 +30,11 @@ class RspackBuildStatsPlugin {
     });
 
     compiler.hooks.done.tapAsync(pluginName, async (stats, callback) => {
-      await this.processStats(stats);
+      const statsJson = stats.toJson({
+        preset: 'none',
+        modules: true,
+      });
+      this.processStats(stats, statsJson);
       callback();
     });
 
@@ -64,11 +68,7 @@ class RspackBuildStatsPlugin {
     });
   }
 
-  private async processStats(stats: Stats) {
-    const statsJson = stats.toJson({
-      preset: 'none',
-      modules: true,
-    });
+  private async processStats(stats: Stats, statsJson: StatsCompilation) {
     this.recordEvent(stats, { type: 'compileDone' });
 
     const startTime = stats.startTime;
