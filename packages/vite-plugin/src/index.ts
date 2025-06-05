@@ -1,1 +1,4 @@
-export * from './lib/vite-build-stats-plugin.js';
+export {
+    type ViteTimingPlugin,
+    viteBuildStatsPlugin
+} from './lib/vite-build-stats-plugin';

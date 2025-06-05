@@ -1,1 +1,1 @@
-export * from './lib/webpack-build-stats-plugin.js';
+export { WebpackBuildStatsPlugin } from './lib/webpack-build-stats-plugin';

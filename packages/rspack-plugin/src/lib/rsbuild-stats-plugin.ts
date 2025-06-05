@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { RsbuildPlugin, RsbuildPluginAPI } from '@rsbuild/core';
 import { WebSocketServer } from 'ws';
-import path from 'path';
-import { createServer } from 'http';
+import path from 'node:path';
+import { createServer } from 'node:http';
 import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
 import type { RspackBuildData, DevFeedbackEvent } from 'agoda-devfeedback-common';
 import { Rspack, rspack } from '@rsbuild/core';

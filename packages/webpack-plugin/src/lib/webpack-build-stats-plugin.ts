@@ -2,8 +2,8 @@
 import type { Compiler, Stats, StatsCompilation, Compilation } from 'webpack';
 import webpack from 'webpack';
 import { WebSocketServer } from 'ws';
-import path from 'path';
-import { createServer, Server } from 'http';
+import path from 'node:path';
+import { createServer, Server } from 'node:http';
 
 import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
 import type { WebpackBuildData, DevFeedbackEvent } from 'agoda-devfeedback-common';
@@ -67,11 +67,17 @@ export class WebpackBuildStatsPlugin {
     /**
      * 3) done => record "compileDone" and then send build stats with devFeedback
      */
-    compiler.hooks.done.tap('WebpackBuildStatsPlugin', async (stats: Stats) => {
+    compiler.hooks.done.tapPromise('WebpackBuildStatsPlugin', async (stats: Stats) => {
       this.recordEvent({ type: 'compileDone' });
 
       // Original build-stats logic
-      const jsonStats: StatsCompilation = stats.toJson();
+      const jsonStats: StatsCompilation = stats.toJson({
+        preset: 'none',
+        timings: true,
+        hash: true,
+        version: true,
+        modules: true,
+      });
 
       const buildStats: WebpackBuildData = {
         ...getCommonMetadata(jsonStats.time ?? -1, this.customIdentifier),

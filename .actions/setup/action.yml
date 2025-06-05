@@ -1,0 +1,26 @@
+name: setup
+description: clone repository, and start turbo cache server locally
+
+inputs:
+  cache-key:
+    description: cache key for turbo cache server
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: turbo
+      uses: dtinth/setup-github-actions-caching-for-turbo@v1
+
+    - name: pnpm
+      uses: pnpm/action-setup@v4
+
+    - name: node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
+        cache: pnpm
+
+    - name: install
+      shell: bash
+      run: pnpm install --frozen-lockfile
