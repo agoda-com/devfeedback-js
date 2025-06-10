@@ -1,5 +1,11 @@
 # agoda-devfeedback-common
 
+## 2.0.8
+
+### Patch Changes
+
+- f201db2: Optimize Rspack plugin
+
 ## 2.0.7
 
 ### Patch Changes
