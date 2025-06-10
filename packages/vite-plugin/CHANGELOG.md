@@ -1,5 +1,13 @@
 # agoda-devfeedback-vite2
 
+## 2.0.9
+
+### Patch Changes
+
+- 6233d61: fix package.json entrypoints
+- Updated dependencies [6233d61]
+  - agoda-devfeedback-common@2.0.9
+
 ## 2.0.8
 
 ### Patch Changes
