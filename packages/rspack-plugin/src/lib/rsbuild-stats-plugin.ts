@@ -78,18 +78,19 @@ export const RsbuildBuildStatsPlugin: RsbuildPlugin = {
       const timeTaken = startTime !== null && endTime !== null ? endTime - startTime : -1;
 
       // Collect build stats
+      const modulesCount = getModulesCount(stats);
       const buildStats: RspackBuildData = {
         ...getCommonMetadata(timeTaken, customIdentifier), // Pass timeTaken to getCommonMetadata
         type: 'rsbuild',
         compilationHash: getHash(stats),
         toolVersion: rspackVersion, // Use the version from api.context.version
-        nbrOfCachedModules: getCachedModulesCount(stats),
-        nbrOfRebuiltModules: getRebuiltModulesCount(stats),
+        nbrOfCachedModules: modulesCount.cached,
+        nbrOfRebuiltModules: modulesCount.rebuilt,
         devFeedback: devFeedbackBuffer,
       };
 
       // Send everything to your existing endpoint
-      await sendBuildData(buildStats);
+      sendBuildData(buildStats);
     }
 
     // Helper function to record events
@@ -162,27 +163,23 @@ export const RsbuildBuildStatsPlugin: RsbuildPlugin = {
     }
 
     // Count cached modules
-    function getCachedModulesCount(stats?: Rspack.Stats | Rspack.MultiStats): number {
-      if (!stats) return 0;
-      if (stats instanceof rspack.MultiStats) {
-        return stats.stats.reduce(
-          (sum, s) => sum + (s.toJson().modules?.filter((m) => m.cached).length ?? 0),
-          0,
-        );
-      }
-      return stats.toJson().modules?.filter((m) => m.cached).length ?? 0;
-    }
-
-    // Count rebuilt modules
-    function getRebuiltModulesCount(stats?: Rspack.Stats | Rspack.MultiStats): number {
-      if (!stats) return 0;
-      if (stats instanceof rspack.MultiStats) {
-        return stats.stats.reduce(
-          (sum, s) => sum + (s.toJson().modules?.filter((m) => m.built).length ?? 0),
-          0,
-        );
-      }
-      return stats.toJson().modules?.filter((m) => m.built).length ?? 0;
+    function getModulesCount(stats?: Rspack.Stats | Rspack.MultiStats): { cached: number, rebuilt: number } {
+      const counts = {
+        cached: 0,
+        rebuilt: 0,
+      };
+      if (!stats) return counts;
+      const allStats = stats instanceof rspack.MultiStats ? stats.stats : [stats];
+      allStats.forEach((stats) => {
+        stats.toJson().modules?.forEach((module) => {
+          if (module.built) {
+            counts.rebuilt++;
+          } else if (module.cached) {
+            counts.cached++;
+          }
+        });
+      });
+      return counts;
     }
   },
 };
