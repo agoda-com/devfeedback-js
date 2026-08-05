@@ -1,11 +1,23 @@
-import { type Plugin, ViteDevServer } from 'vite';
+import { type Plugin, type ResolvedConfig, ViteDevServer } from 'vite';
 import { NormalizedOutputOptions, OutputBundle } from 'rollup';
 import { Blob } from 'node:buffer';
 import path from 'node:path';
+import { statSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'http';
 
-import type { ViteBuildData, ViteBundleStats } from 'agoda-devfeedback-common';
-import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
+import type {
+  CommandBuildData,
+  ViteBuildData,
+  ViteBundleStats,
+} from 'agoda-devfeedback-common';
+import {
+  debugError,
+  flushSpool,
+  getCommonMetadata,
+  onAbort,
+  sendBuildData,
+  sendCommandData,
+} from 'agoda-devfeedback-common';
 
 interface TimingEntry {
   file: string;
@@ -17,9 +29,18 @@ interface ClientMessage {
   clientTimestamp: number;
 }
 
+interface ClientReadyMessage {
+  elapsedMs?: number;
+  domContentLoaded?: number;
+  firstContentfulPaint?: number;
+}
+
 export interface ViteTimingPlugin extends Plugin {
   _TEST_getChangeMap?: () => Map<string, TimingEntry>;
 }
+
+const HMR_COMPLETE_PATH = '/__vite_timing_hmr_complete';
+const CLIENT_READY_PATH = '/__vite_timing_ready';
 
 export function viteBuildStatsPlugin(
   customIdentifier: string | undefined = process.env.npm_lifecycle_event,
@@ -29,11 +50,39 @@ export function viteBuildStatsPlugin(
   let buildEnd: number;
   let bootstrapChunkSizeBytes: number | undefined = undefined;
   let rollupVersion: string | undefined = undefined;
+  let root: string | undefined = undefined;
+  let depsMetaMtimeBefore: number | undefined = undefined;
+  let clientReadyReported = false;
   const changeMap = new Map<string, TimingEntry>();
 
   const normalizePath = (filePath: string): string => {
     return filePath.replace(/\\/g, '/').replace(/^\/+/, '');
   };
+
+  /**
+   * Dependency prebundling is usually the dominant cold-start cost, and its metadata
+   * file is rewritten only when prebundling actually ran. Strictly best effort — under
+   * Rolldown-based Vite the file may not exist at all, so the flag stays undefined
+   * rather than guessing. Never reach into server internals for this.
+   */
+  const depsMetaMtime = (): number | undefined => {
+    try {
+      return statSync(
+        path.join(root ?? process.cwd(), 'node_modules/.vite/deps/_metadata.json'),
+      ).mtimeMs;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const readBody = (req: IncomingMessage): Promise<string> =>
+    new Promise((resolve) => {
+      let body = '';
+      req.on('data', (chunk) => {
+        body += chunk.toString();
+      });
+      req.on('end', () => resolve(body));
+    });
 
   const clientScript = {
     virtualHmrModule: `
@@ -45,16 +94,16 @@ export function viteBuildStatsPlugin(
             data.updates.forEach(update => {
               if (update.path) {
                 const endTime = Date.now();
-                fetch('/__vite_timing_hmr_complete', {
+                fetch('${HMR_COMPLETE_PATH}', {
                   method: 'POST',
-                  headers: { 
+                  headers: {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-Silent': 'true' 
+                    'X-Silent': 'true'
                   },
-                  body: JSON.stringify({ 
+                  body: JSON.stringify({
                     file: update.path,
-                    clientTimestamp: endTime 
+                    clientTimestamp: endTime
                   })
                 }).catch(err => console.error('[vite-timing] Failed to send metrics:', err));
               }
@@ -62,13 +111,73 @@ export function viteBuildStatsPlugin(
           }
         });
       }
+
+      // time to app usable: reported once, from an idle callback, so it never competes
+      // with the app's own startup work
+      (('requestIdleCallback' in window) ? requestIdleCallback : setTimeout)(() => {
+        const nav = performance.getEntriesByType('navigation')[0];
+        const fcp = performance.getEntriesByName('first-contentful-paint')[0];
+        fetch('${CLIENT_READY_PATH}', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Silent': 'true' },
+          body: JSON.stringify({
+            elapsedMs: performance.now(),
+            domContentLoaded: nav && nav.domContentLoadedEventEnd,
+            firstContentfulPaint: fcp && fcp.startTime,
+          }),
+        }).catch(() => {});
+      }, 0);
     `,
   };
 
   const plugin: ViteTimingPlugin = {
     name: 'vite-plugin-agoda-build-reporter',
 
+    configResolved(config: ResolvedConfig) {
+      root = config.root;
+      depsMetaMtimeBefore = depsMetaMtime();
+    },
+
     configureServer(server: ViteDevServer) {
+      const serverStart = Date.now();
+
+      // In dev mode closeBundle never fires, so without this the single number a
+      // developer actually waits for — time to a usable dev server — is never measured.
+      server.httpServer?.once('listening', () => {
+        const after = depsMetaMtime();
+        const prebundled =
+          depsMetaMtimeBefore === undefined && after === undefined
+            ? undefined
+            : after !== depsMetaMtimeBefore;
+
+        void sendCommandData({
+          ...getCommonMetadata(Date.now() - serverStart, customIdentifier),
+          type: 'command',
+          phase: 'devserver',
+          command: 'vite dev',
+          exitCode: 0,
+          success: true,
+          ...(prebundled === undefined ? {} : { prebundled }),
+        });
+
+        // deliver whatever install, or a previous Ctrl-C, left behind
+        void flushSpool(root);
+      });
+
+      // A dev server the developer gave up on is data, not an absence of data.
+      onAbort(
+        (signal): CommandBuildData => ({
+          ...getCommonMetadata(Date.now() - serverStart, customIdentifier),
+          type: 'command',
+          phase: 'devserver',
+          command: 'vite dev',
+          exitCode: 130,
+          success: false,
+          signal,
+        }),
+        root,
+      );
+
       server.watcher.on('change', (file: string) => {
         const timestamp = Date.now();
         const relativePath = normalizePath(path.relative(process.cwd(), file));
@@ -80,12 +189,8 @@ export function viteBuildStatsPlugin(
       });
 
       server.middlewares.use((req: IncomingMessage, res: ServerResponse, next) => {
-        if (req.url === '/__vite_timing_hmr_complete') {
-          let body = '';
-          req.on('data', (chunk) => {
-            body += chunk.toString();
-          });
-          req.on('end', async () => {
+        if (req.url === HMR_COMPLETE_PATH) {
+          void readBody(req).then(async (body) => {
             try {
               const { file, clientTimestamp } = JSON.parse(body) as ClientMessage;
               const normalizedFile = normalizePath(file);
@@ -122,7 +227,7 @@ export function viteBuildStatsPlugin(
                 );
               }
             } catch (err) {
-              console.error('[vite-timing] Error processing timing data:', err);
+              debugError('[vite-timing] Error processing timing data:', err);
               res.writeHead(500, { 'Content-Type': 'application/json' });
               res.end(
                 JSON.stringify({
@@ -131,6 +236,33 @@ export function viteBuildStatsPlugin(
                 }),
               );
             }
+          });
+        } else if (req.url === CLIENT_READY_PATH) {
+          void readBody(req).then(async (body) => {
+            try {
+              // one report per server run: a reload is not a new dev server start
+              if (!clientReadyReported) {
+                clientReadyReported = true;
+                const payload = JSON.parse(body) as ClientReadyMessage;
+                await sendCommandData({
+                  ...getCommonMetadata(
+                    Math.round(Date.now() - serverStart),
+                    customIdentifier,
+                  ),
+                  type: 'command',
+                  phase: 'clientready',
+                  command: 'vite dev',
+                  exitCode: 0,
+                  success: true,
+                  domContentLoadedMs: payload.domContentLoaded,
+                  firstContentfulPaintMs: payload.firstContentfulPaint,
+                });
+              }
+            } catch (err) {
+              debugError('[vite-timing] Error processing client ready data:', err);
+            }
+            res.writeHead(204);
+            res.end();
           });
         } else {
           next();
@@ -202,6 +334,9 @@ export function viteBuildStatsPlugin(
       };
 
       await sendBuildData(buildStats);
+
+      // a production build is a fine moment to deliver a stale install event
+      void flushSpool(root);
     },
   };
 

@@ -6,17 +6,30 @@ import type { ViteDevServer } from 'vite';
 
 import { viteBuildStatsPlugin } from './vite-build-stats-plugin';
 import type { CommonMetadata, ViteBuildData } from 'agoda-devfeedback-common';
-import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
+import {
+  getCommonMetadata,
+  sendBuildData,
+  sendCommandData,
+  flushSpool,
+  onAbort,
+} from 'agoda-devfeedback-common';
 import { generateViteOutputBundleData } from '../utils/test-data-generator.js';
 
 // Mock common dependencies
 vi.mock('agoda-devfeedback-common', () => ({
   getCommonMetadata: vi.fn(),
   sendBuildData: vi.fn(),
+  sendCommandData: vi.fn(),
+  flushSpool: vi.fn(),
+  onAbort: vi.fn(),
+  debugError: vi.fn(),
 }));
 
 const mockedGetCommonMetadata = vi.mocked(getCommonMetadata);
 const mockedSendBuildData = vi.mocked(sendBuildData);
+const mockedSendCommandData = vi.mocked(sendCommandData);
+const mockedFlushSpool = vi.mocked(flushSpool);
+const mockedOnAbort = vi.mocked(onAbort);
 
 // Mock request/response classes for HMR testing
 class MockRequest extends EventEmitter {
@@ -289,6 +302,103 @@ describe('viteBuildStatsPlugin', () => {
       const content = plugin.load?.(id);
       expect(content).toContain('createHotContext');
       expect(content).toContain('vite:afterUpdate');
+    });
+
+    it('should ask the client to report when the app is usable', () => {
+      const content = plugin.load?.('/@vite-timing/hmr');
+      expect(content).toContain('/__vite_timing_ready');
+      expect(content).toContain('first-contentful-paint');
+    });
+  });
+
+  describe('dev server lifecycle', () => {
+    let httpServer: EventEmitter;
+
+    beforeEach(() => {
+      httpServer = new EventEmitter();
+      mockServer = {
+        watcher: mockWatcher,
+        httpServer: httpServer as unknown as ViteDevServer['httpServer'],
+        middlewares: { use: vi.fn() },
+      } as Partial<ViteDevServer>;
+      mockedGetCommonMetadata.mockReturnValue({} as CommonMetadata);
+    });
+
+    it('reports time to a usable dev server once it is listening', () => {
+      plugin.configureServer?.(mockServer as ViteDevServer);
+      expect(mockedSendCommandData).not.toHaveBeenCalled();
+
+      httpServer.emit('listening');
+
+      expect(mockedSendCommandData).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'command',
+          phase: 'devserver',
+          command: 'vite dev',
+          exitCode: 0,
+          success: true,
+        }),
+      );
+    });
+
+    it('delivers spooled install and abort events once the server is up', () => {
+      plugin.configureServer?.(mockServer as ViteDevServer);
+      httpServer.emit('listening');
+      expect(mockedFlushSpool).toHaveBeenCalled();
+    });
+
+    it('registers an abort handler that records a given-up dev server', () => {
+      plugin.configureServer?.(mockServer as ViteDevServer);
+
+      expect(mockedOnAbort).toHaveBeenCalled();
+      const build = mockedOnAbort.mock.calls[0]?.[0] as (
+        signal: NodeJS.Signals,
+      ) => Record<string, unknown>;
+      expect(build('SIGINT')).toMatchObject({
+        type: 'command',
+        phase: 'devserver',
+        exitCode: 130,
+        success: false,
+        signal: 'SIGINT',
+      });
+    });
+
+    it('reports client ready exactly once per server run', async () => {
+      plugin.configureServer?.(mockServer as ViteDevServer);
+      const handler = (
+        mockServer.middlewares?.use as jest.Mock<void, [MiddlewareHandler]>
+      ).mock.calls[0]?.[0] as MiddlewareHandler;
+
+      const post = async () => {
+        const req = new MockRequest('/__vite_timing_ready');
+        const res = new MockResponse();
+        const done = new Promise<void>((resolve) => {
+          res.end = vi.fn(() => resolve());
+        });
+        handler(req, res, vi.fn());
+        req.emit(
+          'data',
+          JSON.stringify({
+            elapsedMs: 1200,
+            domContentLoaded: 900,
+            firstContentfulPaint: 1000,
+          }),
+        );
+        req.emit('end');
+        await done;
+      };
+
+      await post();
+      await post();
+
+      const clientReady = mockedSendCommandData.mock.calls.filter(
+        (call) => (call[0] as { phase?: string }).phase === 'clientready',
+      );
+      expect(clientReady).toHaveLength(1);
+      expect(clientReady[0]?.[0]).toMatchObject({
+        domContentLoadedMs: 900,
+        firstContentfulPaintMs: 1000,
+      });
     });
   });
 });

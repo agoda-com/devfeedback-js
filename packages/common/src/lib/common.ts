@@ -1,4 +1,5 @@
 import type {
+  CommandBuildData,
   CommonMetadata,
   ViteBuildData,
   RspackBuildData,
@@ -7,56 +8,52 @@ import type {
 import { v1 as uuidv1 } from 'uuid';
 import os from 'node:os';
 import fs from 'node:fs';
-import { spawnSync } from 'node:child_process';
 import safelyTry from './safely-retry';
 import axios from 'axios';
+import { getGitInfo } from './git';
+import { getSessionId } from './session';
 
 const UNKNOWN_VALUE = '<unknown>';
 
-const runGitCommand = (args: string[]): string | undefined => {
-  const { data: result } = safelyTry(() =>
-    spawnSync('git', args).stdout.toString().trim(),
-  );
-  return result;
-};
+/**
+ * Off-VPN a POST with no timeout hangs until the OS TCP timeout, on the critical
+ * path of whatever the developer is actually doing. Nothing we send is worth a wait.
+ */
+const SEND_TIMEOUT_MS = 1500;
 
 export const getCommonMetadata = (
   timeTaken: number,
   customIdentifier: string = process.env.npm_lifecycle_event ?? UNKNOWN_VALUE,
 ): CommonMetadata => {
-  const repoUrl = runGitCommand(['config', '--get', 'remote.origin.url']);
-  let repoName = repoUrl
-    ? repoUrl.substring(repoUrl.lastIndexOf('/') + 1)
-    : UNKNOWN_VALUE;
-  repoName = repoName.endsWith('.git')
-    ? repoName.substring(0, repoName.lastIndexOf('.'))
-    : repoName;
+  const git = getGitInfo();
 
   const { data: gitUserName } = safelyTry(
     () => process.env['GITLAB_USER_LOGIN'] ?? process.env['GITHUB_ACTOR'],
   );
   const { data: osUsername } = safelyTry(() => os.userInfo().username);
+  const cpus = os.cpus();
 
   return {
     id: uuidv1(),
+    sessionId: getSessionId(),
     userName: (gitUserName ? gitUserName : osUsername) ?? UNKNOWN_VALUE,
-    cpuCount: os.cpus().length,
+    cpuCount: cpus.length,
     hostname: os.hostname(),
     platform: os.type(),
     os: os.release(),
     timeTaken: timeTaken,
-    branch: runGitCommand(['rev-parse', '--abbrev-ref', 'HEAD']) ?? UNKNOWN_VALUE,
-    projectName: repoName,
-    repository: repoUrl ?? UNKNOWN_VALUE,
-    repositoryName: repoName,
+    branch: git.branch ?? UNKNOWN_VALUE,
+    projectName: git.repositoryName ?? UNKNOWN_VALUE,
+    repository: git.repository ?? UNKNOWN_VALUE,
+    repositoryName: git.repositoryName ?? UNKNOWN_VALUE,
     timestamp: Date.now(),
     builtAt: new Date().toISOString(),
     totalMemory: os.totalmem(),
-    cpuModels: os.cpus().map((cpu) => cpu.model),
-    cpuSpeed: os.cpus().map((cpu) => cpu.speed),
+    cpuModels: cpus.map((cpu) => cpu.model),
+    cpuSpeed: cpus.map((cpu) => cpu.speed),
     nodeVersion: process.version,
     v8Version: process.versions.v8,
-    commitSha: runGitCommand(['rev-parse', 'HEAD']) ?? UNKNOWN_VALUE,
+    commitSha: git.commitSha ?? UNKNOWN_VALUE,
     customIdentifier: customIdentifier,
   };
 };
@@ -66,17 +63,25 @@ const getEndpointFromType = (type: string) => {
     webpack: process.env.WEBPACK_ENDPOINT || 'http://compilation-metrics/webpack',
     vite: process.env.VITE_ENDPOINT || 'http://compilation-metrics/vite',
     vitehmr: process.env.VITE_ENDPOINT || 'http://compilation-metrics/vite',
-    rsbuild: process.env.RSPACK_ENDPOINT || 'http://compilation-metrics/webpack',
-    rspack: process.env.RSPACK_ENDPOINT || 'http://compilation-metrics/webpack',
+    rsbuild: process.env.RSPACK_ENDPOINT || 'http://compilation-metrics/rspack',
+    rspack: process.env.RSPACK_ENDPOINT || 'http://compilation-metrics/rspack',
+    command: process.env.COMMAND_ENDPOINT || 'http://compilation-metrics/command',
   }[type];
 };
 
 const LOG_FILE = 'devfeedback.log';
 
 const sendData = async (endpoint: string, metaData: CommonMetadata): Promise<boolean> => {
-  const { error } = await safelyTry(() => axios.post(endpoint, metaData));
+  const { error } = await safelyTry(() =>
+    axios.post(endpoint, metaData, { timeout: SEND_TIMEOUT_MS }),
+  );
   if (error) {
-    fs.writeFileSync(LOG_FILE, JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    safelyTry(() =>
+      fs.writeFileSync(
+        LOG_FILE,
+        JSON.stringify(error, Object.getOwnPropertyNames(error)),
+      ),
+    );
     return false;
   }
   return true;
@@ -107,4 +112,15 @@ export const sendBuildData = async (
   console.log(
     `Your build stats has successfully been sent to ${endpoint} for ${buildStats.type}.`,
   );
+};
+
+/**
+ * Lifecycle events are emitted from places a developer is not asking for output —
+ * install hooks, dev server startup, signal handlers — so this path prints nothing.
+ * Failures land in devfeedback.log like everything else.
+ */
+export const sendCommandData = async (data: CommandBuildData): Promise<void> => {
+  const endpoint = getEndpointFromType(data.type);
+  if (!endpoint) return;
+  await sendData(endpoint, data);
 };
