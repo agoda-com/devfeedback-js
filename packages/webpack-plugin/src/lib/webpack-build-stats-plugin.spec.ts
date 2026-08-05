@@ -18,6 +18,7 @@ const mockedSendBuildData = sendBuildData as unknown as ReturnType<typeof vi.fn>
  */
 const createMockCompiler = () => {
   return {
+    watchMode: false,
     hooks: {
       watchRun: {
         tap: vi.fn(),
@@ -67,11 +68,25 @@ describe('WebpackBuildStatsPlugin', () => {
       'WebpackBuildStatsPlugin',
       expect.any(Function),
     );
-    // The plugin also uses `compilation.tap(...)` internally
+  });
+
+  it('should inject the client runtime module in watch mode', () => {
+    mockedCompiler.watchMode = true;
+    plugin.apply(mockedCompiler as unknown as Compiler);
+
     expect(mockedCompiler.hooks.compilation.tap).toHaveBeenCalledWith(
       'WebpackBuildStatsPlugin',
       expect.any(Function),
     );
+  });
+
+  it('should not inject the client runtime module for one-off builds', () => {
+    mockedCompiler.watchMode = false;
+    plugin.apply(mockedCompiler as unknown as Compiler);
+
+    // One-off builds (production/CI/SSR) must not get the browser runtime —
+    // it breaks html-webpack-plugin template evaluation and SSR bundles.
+    expect(mockedCompiler.hooks.compilation.tap).not.toHaveBeenCalled();
   });
 
   it('should send the correct build stats data on done', async () => {
