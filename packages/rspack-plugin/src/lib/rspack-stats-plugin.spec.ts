@@ -8,6 +8,12 @@ import type { RspackBuildData } from 'agoda-devfeedback-common';
 vi.mock('agoda-devfeedback-common', () => ({
   getCommonMetadata: vi.fn(),
   sendBuildData: vi.fn(),
+  sendCommandData: vi.fn(),
+  flushSpool: vi.fn(),
+  onAbort: vi.fn(),
+  debugLog: vi.fn(),
+  debugWarn: vi.fn(),
+  debugError: vi.fn(),
 }));
 
 const mockedGetCommonMetadata = vi.mocked(getCommonMetadata);

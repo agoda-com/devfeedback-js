@@ -3,12 +3,24 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RsbuildBuildStatsPlugin } from './rsbuild-stats-plugin';
 import { RsbuildPluginAPI } from '@rsbuild/core';
 import { Rspack } from '@rsbuild/core';
-import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
+import {
+  getCommonMetadata,
+  sendBuildData,
+  sendCommandData,
+  flushSpool,
+  onAbort,
+} from 'agoda-devfeedback-common';
 import type { RspackBuildData } from 'agoda-devfeedback-common';
 
 vi.mock('agoda-devfeedback-common', () => ({
   getCommonMetadata: vi.fn(),
   sendBuildData: vi.fn(),
+  sendCommandData: vi.fn(),
+  flushSpool: vi.fn(),
+  onAbort: vi.fn(),
+  debugLog: vi.fn(),
+  debugWarn: vi.fn(),
+  debugError: vi.fn(),
 }));
 
 const mockedGetCommonMetadata = vi.mocked(getCommonMetadata);
@@ -39,7 +51,9 @@ const createMockApi = (): Partial<RsbuildPluginAPI> => {
     onAfterBuild: vi.fn(),
     onCloseBuild: vi.fn(),
     onBeforeStartDevServer: vi.fn(),
+    onAfterStartDevServer: vi.fn(),
     onDevCompileDone: vi.fn(),
+    modifyHTMLTags: vi.fn(),
     context: {
       version: '1.0.0',
       rootPath: '/mock/root',
@@ -119,5 +133,56 @@ describe('RsbuildBuildStatsPlugin', () => {
 
     // Restore process.env
     process.env = originalEnv;
+  });
+
+  describe('dev server lifecycle', () => {
+    it('reports time to a usable dev server', async () => {
+      await RsbuildBuildStatsPlugin.setup(mockApi as RsbuildPluginAPI);
+
+      (mockApi.onBeforeStartDevServer as any).mock.calls[0][0]();
+      await (mockApi.onAfterStartDevServer as any).mock.calls[0][0]();
+
+      expect(vi.mocked(sendCommandData)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'command',
+          phase: 'devserver',
+          command: 'rsbuild dev',
+          exitCode: 0,
+          success: true,
+        }),
+      );
+      expect(vi.mocked(flushSpool)).toHaveBeenCalled();
+    });
+
+    it('records a dev server the developer gave up on', async () => {
+      await RsbuildBuildStatsPlugin.setup(mockApi as RsbuildPluginAPI);
+      // dev only: a production build must not register the handler
+      expect(vi.mocked(onAbort)).not.toHaveBeenCalled();
+      (mockApi.onBeforeStartDevServer as any).mock.calls[0][0]();
+
+      const build = vi.mocked(onAbort).mock.calls[0]?.[0] as (
+        signal: NodeJS.Signals,
+      ) => Record<string, unknown>;
+      expect(build('SIGINT')).toMatchObject({
+        type: 'command',
+        phase: 'devserver',
+        exitCode: 130,
+        success: false,
+        signal: 'SIGINT',
+      });
+    });
+
+    it('injects a client script carrying the runtime WebSocket port', async () => {
+      await RsbuildBuildStatsPlugin.setup(mockApi as RsbuildPluginAPI);
+      // the listen callback is async, so wait a tick for the port to be assigned
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const modify = (mockApi.modifyHTMLTags as any).mock.calls[0][0];
+      const params = { headTags: [] as any[] };
+      modify(params);
+
+      expect(params.headTags).toHaveLength(1);
+      expect(params.headTags[0].children).toContain('WebSocket');
+    });
   });
 });

@@ -2,8 +2,20 @@ import { Compiler, Stats, StatsCompilation } from '@rspack/core';
 import { WebSocketServer, Server as WebSocketServerType } from 'ws';
 import path from 'node:path';
 import { createServer, Server as HttpServerType } from 'node:http';
-import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
-import type { RspackBuildData, DevFeedbackEvent } from 'agoda-devfeedback-common';
+import {
+  debugError,
+  debugLog,
+  flushSpool,
+  getCommonMetadata,
+  onAbort,
+  sendBuildData,
+  sendCommandData,
+} from 'agoda-devfeedback-common';
+import type {
+  CommandBuildData,
+  RspackBuildData,
+  DevFeedbackEvent,
+} from 'agoda-devfeedback-common';
 
 class RspackBuildStatsPlugin {
   private customIdentifier: string;
@@ -11,6 +23,10 @@ class RspackBuildStatsPlugin {
   private wsServer: WebSocketServerType;
   private httpServer: HttpServerType;
   private toolVersion: string = '';
+  private watchStart: number | undefined;
+  private firstWatchCompileReported = false;
+  private abortRegistered = false;
+  private flushedOnce = false;
 
   constructor(options: { customIdentifier?: string } = {}) {
     this.customIdentifier =
@@ -34,17 +50,19 @@ class RspackBuildStatsPlugin {
         preset: 'none',
         modules: true,
       });
-      this.processStats(stats, statsJson);
+      await this.processStats(stats, statsJson);
       callback();
     });
 
     compiler.hooks.watchRun.tap(pluginName, () => {
       this.devFeedbackBuffer = [];
-      console.log('[RspackBuildStatsPlugin] Watching for changes...');
+      if (this.watchStart === undefined) this.watchStart = Date.now();
+      debugLog('[RspackBuildStatsPlugin] Watching for changes...');
+      this.registerAbortHandler();
     });
 
     compiler.hooks.failed.tap(pluginName, (error) => {
-      console.error('[RspackBuildStatsPlugin] Compilation failed:', error);
+      debugError('[RspackBuildStatsPlugin] Compilation failed:', error);
     });
 
     // Cleanup
@@ -54,11 +72,31 @@ class RspackBuildStatsPlugin {
     });
   }
 
+  /** Ctrl-C during watch is a developer giving up on a rebuild; that is worth recording. */
+  private registerAbortHandler() {
+    if (this.abortRegistered) return;
+    this.abortRegistered = true;
+    onAbort(
+      (signal): CommandBuildData => ({
+        ...getCommonMetadata(
+          this.watchStart ? Date.now() - this.watchStart : 0,
+          this.customIdentifier,
+        ),
+        type: 'command',
+        phase: 'devserver',
+        command: 'rspack watch',
+        exitCode: 130,
+        success: false,
+        signal,
+      }),
+    );
+  }
+
   private setupWebSocketServer() {
     this.httpServer.listen(0, () => {
       const address = this.httpServer.address();
       const port = typeof address === 'object' ? address?.port : null;
-      console.log(`[DevFeedback] WebSocket server on port ${port}`);
+      debugLog(`[DevFeedback] WebSocket server on port ${port}`);
     });
 
     this.wsServer.on('connection', (socket) => {
@@ -86,6 +124,27 @@ class RspackBuildStatsPlugin {
     };
 
     await sendBuildData(buildStats);
+
+    // In watch mode the first completed compile is the moment the developer can use
+    // the app; it is also the first safe point to deliver anything the install or a
+    // previous Ctrl-C left in the spool.
+    if (this.watchStart !== undefined && !this.firstWatchCompileReported) {
+      this.firstWatchCompileReported = true;
+      await sendCommandData({
+        ...getCommonMetadata(Date.now() - this.watchStart, this.customIdentifier),
+        type: 'command',
+        phase: 'devserver',
+        command: 'rspack watch',
+        exitCode: 0,
+        success: true,
+      });
+    }
+
+    // once per process only — every rebuild must stay free of extra filesystem work
+    if (!this.flushedOnce) {
+      this.flushedOnce = true;
+      void flushSpool();
+    }
   }
 
   private recordEvent(stats: Stats, partial: Omit<DevFeedbackEvent, 'elapsedMs'>) {
@@ -105,12 +164,12 @@ class RspackBuildStatsPlugin {
     try {
       const parsed = JSON.parse(rawMsg) as DevFeedbackEvent;
       this.devFeedbackBuffer.push(parsed);
-      console.log(
+      debugLog(
         `[DevFeedback] Client event: ${parsed.type}, elapsedMs=${parsed.elapsedMs}`,
       );
     } catch (err) {
       // Ignore parse errors
-      console.error('[DevFeedback] Error parsing incoming message:', err);
+      debugError('[DevFeedback] Error parsing incoming message:', err);
     }
   }
 
