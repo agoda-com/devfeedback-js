@@ -96,23 +96,31 @@ export class WebpackBuildStatsPlugin {
     });
 
     /**
-     * 4) Inject client code as a runtime module
+     * 4) Inject client code as a runtime module — watch mode only.
+     *
+     * The client snippet exists to report HMR / DOM-update events during local
+     * development, so it only makes sense when webpack is watching (dev server).
+     * Injecting it into one-off builds (production, CI, SSR) breaks consumers:
+     * html-webpack-plugin child compilations evaluate the template in node:vm
+     * where `window` is undefined, and SSR bundles execute the runtime in Node.
      */
-    compiler.hooks.compilation.tap(
-      'WebpackBuildStatsPlugin',
-      (compilation: Compilation) => {
-        compilation.hooks.afterChunks.tap('WebpackBuildStatsPlugin', (chunks) => {
-          for (const chunk of chunks) {
-            if (chunk.canBeInitial()) {
-              compilation.addRuntimeModule(
-                chunk,
-                new DevFeedbackRuntimeModule(() => this.generateClientCode()),
-              );
+    if (compiler.watchMode) {
+      compiler.hooks.compilation.tap(
+        'WebpackBuildStatsPlugin',
+        (compilation: Compilation) => {
+          compilation.hooks.afterChunks.tap('WebpackBuildStatsPlugin', (chunks) => {
+            for (const chunk of chunks) {
+              if (chunk.canBeInitial()) {
+                compilation.addRuntimeModule(
+                  chunk,
+                  new DevFeedbackRuntimeModule(() => this.generateClientCode()),
+                );
+              }
             }
-          }
-        });
-      },
-    );
+          });
+        },
+      );
+    }
   }
 
   /**
@@ -165,6 +173,11 @@ export class WebpackBuildStatsPlugin {
 
     return `
       (function(){
+        // Defensive: never execute outside a browser (e.g. SSR bundles or
+        // html-webpack-plugin template evaluation in node:vm).
+        if (typeof window === 'undefined' || typeof document === 'undefined') {
+          return;
+        }
         window.__BUILD_START__ = ${buildStartTime};
 
         var ws = new WebSocket('${wsUrl}');
