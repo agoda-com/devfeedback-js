@@ -9,7 +9,7 @@ This collection supports collecting build time (compilation time) metrics across
 - Webpack (4.x or 5.x)
 - Vite (4.x and up, including 6.x and Rolldown-based builds)
 - Rspack/Rsbuild (1.x)
-
+ 
 It's like a stopwatch for your builds, but cooler, and now with more bundlers! 🎮
 
 ### Consuming the data
