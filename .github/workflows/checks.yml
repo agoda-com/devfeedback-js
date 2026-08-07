@@ -51,3 +51,18 @@ jobs:
           cache-key: ci-types
       - name: types
         run: pnpm check-types
+
+  npm-publish-preflight:
+    name: npm-publish-preflight
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: verify npm publish credentials
+        env:
+          NPM_TOKEN: ${{ secrets.npm_token }}
+        run: node .github/scripts/npm-preflight.mjs
