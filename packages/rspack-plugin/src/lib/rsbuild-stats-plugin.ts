@@ -23,12 +23,20 @@ import { Rspack, rspack } from '@rsbuild/core';
 /** client events that arrive between compiles must not grow without bound */
 const MAX_CARRIED_EVENTS = 100;
 
+interface ClientReadyMessage {
+  type: 'clientReady';
+  elapsedMs?: number;
+  domContentLoaded?: number;
+  firstContentfulPaint?: number;
+}
+
 export const RsbuildBuildStatsPlugin: RsbuildPlugin = {
   name: 'RsbuildBuildStatsPlugin',
   async setup(api: RsbuildPluginAPI) {
     const customIdentifier = process.env.npm_lifecycle_event;
     let devFeedbackBuffer: DevFeedbackEvent[] = [];
     let devServerStart = 0;
+    let clientReadyReported = false;
     let wsPort: number | undefined;
 
     // Retrieve the Rsbuild core version from the context
@@ -68,6 +76,7 @@ export const RsbuildBuildStatsPlugin: RsbuildPlugin = {
     api.onBeforeStartDevServer(() => {
       debugLog('[RsbuildBuildStatsPlugin] Development server is starting...');
       devServerStart = Date.now();
+      clientReadyReported = false;
       // A restart before the first compile completes would otherwise silently drop
       // every client event the previous server collected, so carry them forward.
       devFeedbackBuffer = devFeedbackBuffer.slice(-MAX_CARRIED_EVENTS);
@@ -143,17 +152,20 @@ export const RsbuildBuildStatsPlugin: RsbuildPlugin = {
         (() => {
           try {
             const socket = new WebSocket('ws://' + location.hostname + ':${port}');
-            const send = (type, elapsedMs) => {
-              if (typeof elapsedMs !== 'number') return;
-              try { socket.send(JSON.stringify({ type, elapsedMs })); } catch {}
-            };
             socket.addEventListener('open', () => {
               (('requestIdleCallback' in window) ? requestIdleCallback : setTimeout)(() => {
                 const nav = performance.getEntriesByType('navigation')[0];
                 const fcp = performance.getEntriesByName('first-contentful-paint')[0];
-                send('clientReady', performance.now());
-                send('domContentLoaded', nav && nav.domContentLoadedEventEnd);
-                send('firstContentfulPaint', fcp && fcp.startTime);
+                // one message, so the server can time the span from dev server start
+                // rather than from whenever the browser happened to open the page
+                try {
+                  socket.send(JSON.stringify({
+                    type: 'clientReady',
+                    elapsedMs: performance.now(),
+                    domContentLoaded: nav && nav.domContentLoadedEventEnd,
+                    firstContentfulPaint: fcp && fcp.startTime,
+                  }));
+                } catch {}
               }, 0);
             });
           } catch {}
@@ -207,8 +219,12 @@ export const RsbuildBuildStatsPlugin: RsbuildPlugin = {
     // Handle incoming WebSocket messages
     function handleIncomingWebSocketMessage(rawMsg: string) {
       try {
-        const parsed = JSON.parse(rawMsg) as DevFeedbackEvent;
-        devFeedbackBuffer.push(parsed);
+        const parsed = JSON.parse(rawMsg) as DevFeedbackEvent | ClientReadyMessage;
+        if (parsed.type === 'clientReady') {
+          handleClientReady(parsed as ClientReadyMessage);
+          return;
+        }
+        devFeedbackBuffer.push(parsed as DevFeedbackEvent);
         debugLog(
           `[DevFeedback] Client event: ${parsed.type}, elapsedMs=${parsed.elapsedMs}`,
         );
@@ -216,6 +232,41 @@ export const RsbuildBuildStatsPlugin: RsbuildPlugin = {
         // Ignore parse errors
         debugError('[DevFeedback] Error parsing incoming WebSocket message:', err);
       }
+    }
+
+    function bufferClientEvent(type: string, elapsedMs?: number) {
+      if (typeof elapsedMs !== 'number') return;
+      devFeedbackBuffer.push({ type, elapsedMs });
+    }
+
+    /**
+     * `clientReady` used to exist only as an entry in `devFeedback[]`, timed with
+     * `performance.now()` — i.e. from page navigation, excluding everything before the
+     * browser opened the page. That is not comparable with Vite's `clientready`, which
+     * runs from dev server start. Emit a first-class command event on the same origin
+     * as Vite's, and keep the browser-relative numbers as detail.
+     */
+    function handleClientReady(msg: ClientReadyMessage) {
+      bufferClientEvent('clientReady', msg.elapsedMs);
+      bufferClientEvent('domContentLoaded', msg.domContentLoaded);
+      bufferClientEvent('firstContentfulPaint', msg.firstContentfulPaint);
+      debugLog(`[DevFeedback] Client event: clientReady, elapsedMs=${msg.elapsedMs}`);
+
+      // one report per dev server run: a page reload is not a new dev server start,
+      // and a production build has no dev server to measure from
+      if (clientReadyReported || !devServerStart) return;
+      clientReadyReported = true;
+
+      void sendCommandData({
+        ...getCommonMetadata(Date.now() - devServerStart, customIdentifier),
+        type: 'command',
+        phase: 'clientready',
+        command: 'rsbuild dev',
+        exitCode: 0,
+        success: true,
+        domContentLoadedMs: msg.domContentLoaded,
+        firstContentfulPaintMs: msg.firstContentfulPaint,
+      });
     }
 
     // Normalize file paths

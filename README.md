@@ -2,6 +2,15 @@
 
 Welcome to agoda-devfeedback, the JavaScript/TypeScript package collection that's about to make your builds faster than a caffeinated squirrel on a sugar rush! We're here to collect metrics that relate to developers' experience, because who doesn't love a good statistic about how long they've been waiting for their build to finish?
 
+## The F5 Experience: Because Waiting is So Last Year
+
+What is the F5 Experience? Have a read [here](https://beerandserversdontmix.com/2024/08/15/an-introduction-to-the-f5-experience/)
+
+Remember, we're all about that F5 Experience here at agoda-devfeedback. Our goal is to make your development process smoother than a JavaScript promise chain. Here's what that means for you:
+
+1. **Setup Should Be a Breeze**: You should be able to install these packages and get metrics faster than you can say "npm install".
+2. **Fast Feedback Loop**: We want your builds to be so fast, you'll forget what you were working on by the time they finish. (Okay, maybe not that fast, but you get the idea.)
+
 ## Build Time (Compilation Time): Because Life's Too Short for Slow Builds
 
 This collection supports collecting build time (compilation time) metrics across multiple bundlers:
@@ -188,15 +197,6 @@ Telemetry that slows people down gets deleted from configs, so:
 - Signal handlers write synchronously and then get out of the way, so Ctrl-C behaves exactly as it would without the plugin.
 - The spool is capped at 256 KB and events older than a week are dropped rather than accumulated.
 - Startup chatter is behind `DEVFEEDBACK_DEBUG=1`. At the default log level the lifecycle events print nothing at all.
-
-## The F5 Experience: Because Waiting is So Last Year
-
-What is the F5 Experience? Have a read [here](https://beerandserversdontmix.com/2024/08/15/an-introduction-to-the-f5-experience/)
-
-Remember, we're all about that F5 Experience here at agoda-devfeedback. Our goal is to make your development process smoother than a JavaScript promise chain. Here's what that means for you:
-
-1. **Setup Should Be a Breeze**: You should be able to install these packages and get metrics faster than you can say "npm install".
-2. **Fast Feedback Loop**: We want your builds to be so fast, you'll forget what you were working on by the time they finish. (Okay, maybe not that fast, but you get the idea.)
 
 ## Contributing
 
