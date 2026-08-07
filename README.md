@@ -124,18 +124,6 @@ These arrive as a new event type, `type: "command"`, on the `COMMAND_ENDPOINT`:
 
 Aborted runs count too: Ctrl-C on a dev server produces a `devserver` event with `success: false` and `signal: "SIGINT"`. A developer who gave up waiting is the most interesting data point on the chart.
 
-### Comparing bundlers honestly
-
-Two of these numbers mean the same thing across bundlers. One does not.
-
-**`clientready` is the cross-bundler dev-startup metric.** It runs from dev server start to the app being usable in the browser, on both Vite and Rsbuild, so the two are directly comparable.
-
-**`devserver` is not.** On both sides it means "the socket is up", which is an honest definition and a useless comparison: Vite defers all compilation until a request arrives, so it reaches `listening` in ~20 ms, while Rsbuild has real startup cost before the socket opens. Charting `devserver` across bundlers reads as a large Vite win that reflects nothing a developer waits for. Compare `devserver` against itself over time; compare bundlers on `clientready`.
-
-There is also no Vite counterpart to Rsbuild's first full dev compile, and there should not be one — Vite has no whole-app compile in dev.
-
-**Production builds cover the same span.** `type: "vite"` measures through `closeBundle` and `type: "rsbuild"` through `stats.endTime`, so both include render, minify and emit. Vite additionally reports `transformTimeMs`, the transform phase alone, if you want the split.
-
 ### Session correlation
 
 Every event — including the existing `webpack`, `vite`, `vitehmr`, `rspack` and `rsbuild` payloads — now carries a `sessionId`, so install → dev server ready → first HMR stitch into one timeline. It is purely additive; nothing that existed changed shape.
