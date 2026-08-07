@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RsbuildBuildStatsPlugin } from './rsbuild-stats-plugin';
 import { RsbuildPluginAPI } from '@rsbuild/core';
 import { Rspack } from '@rsbuild/core';
+import { WebSocket } from 'ws';
 import {
   getCommonMetadata,
   sendBuildData,
@@ -63,6 +64,25 @@ const createMockApi = (): Partial<RsbuildPluginAPI> => {
     },
   };
 };
+
+// The port is only known at runtime, so the only way to reach the plugin's WebSocket
+// server is through the script it injects.
+const wsPortFromScript = (api: Partial<RsbuildPluginAPI>): number => {
+  const params = { headTags: [] as any[] };
+  (api.modifyHTMLTags as any).mock.calls[0][0](params);
+  const port = /ws:\/\/' \+ location\.hostname \+ ':(\d+)/.exec(
+    params.headTags[0]?.children ?? '',
+  )?.[1];
+  if (!port) throw new Error('client script carries no WebSocket port');
+  return Number(port);
+};
+
+const connectClient = (port: number): Promise<WebSocket> =>
+  new Promise((resolve, reject) => {
+    const socket = new WebSocket(`ws://127.0.0.1:${port}`);
+    socket.on('open', () => resolve(socket));
+    socket.on('error', reject);
+  });
 
 describe('RsbuildBuildStatsPlugin', () => {
   let mockApi: Partial<RsbuildPluginAPI>;
@@ -170,6 +190,57 @@ describe('RsbuildBuildStatsPlugin', () => {
         success: false,
         signal: 'SIGINT',
       });
+    });
+
+    it('reports client ready from dev server start, exactly once per run', async () => {
+      await RsbuildBuildStatsPlugin.setup(mockApi as RsbuildPluginAPI);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      (mockApi.onBeforeStartDevServer as any).mock.calls[0][0]();
+
+      const socket = await connectClient(wsPortFromScript(mockApi));
+      const message = JSON.stringify({
+        type: 'clientReady',
+        elapsedMs: 300,
+        domContentLoaded: 250,
+        firstContentfulPaint: 280,
+      });
+      // a page reload sends the same message again; it is not a new dev server start
+      socket.send(message);
+      socket.send(message);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      socket.close();
+
+      const clientReady = vi
+        .mocked(sendCommandData)
+        .mock.calls.filter((call) => call[0]?.phase === 'clientready');
+      expect(clientReady).toHaveLength(1);
+      expect(clientReady[0]?.[0]).toMatchObject({
+        type: 'command',
+        phase: 'clientready',
+        command: 'rsbuild dev',
+        success: true,
+        domContentLoadedMs: 250,
+        firstContentfulPaintMs: 280,
+      });
+      // the browser-relative numbers stay as detail on the next compile's payload
+      const onDevCompileDone = (mockApi.onDevCompileDone as any).mock.calls[0][0];
+      await onDevCompileDone({
+        stats: createMockStats({
+          startTime: Date.now(),
+          endTime: Date.now() + 10,
+          hash: 'devhash',
+          modules: [],
+        }),
+      });
+      const sent = mockedSendBuildData.mock.calls.at(-1)?.[0] as RspackBuildData;
+      expect(sent.devFeedback).toEqual(
+        expect.arrayContaining([
+          { type: 'clientReady', elapsedMs: 300 },
+          { type: 'domContentLoaded', elapsedMs: 250 },
+          { type: 'firstContentfulPaint', elapsedMs: 280 },
+        ]),
+      );
     });
 
     it('injects a client script carrying the runtime WebSocket port', async () => {

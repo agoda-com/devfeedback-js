@@ -2,7 +2,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NormalizedOutputOptions, OutputBundle } from 'rollup';
 import { EventEmitter } from 'events';
 import path from 'node:path';
-import type { ViteDevServer } from 'vite';
+import { statSync } from 'node:fs';
+import type { ResolvedConfig, ViteDevServer } from 'vite';
+
+vi.mock('node:fs', () => ({
+  statSync: vi.fn(() => {
+    throw new Error('ENOENT');
+  }),
+}));
 
 import { viteBuildStatsPlugin } from './vite-build-stats-plugin';
 import type { CommonMetadata, ViteBuildData } from 'agoda-devfeedback-common';
@@ -88,10 +95,20 @@ describe('viteBuildStatsPlugin', () => {
         bootstrapChunkSizeLimitBytes: bootstrapChunkSizeLimitKb * 1000,
       },
       file: null, // Add missing file property
+      transformTimeMs: 100,
     } as ViteBuildData;
 
+    // buildStart at 0, buildEnd at 100, closeBundle at 150: the reported build time is
+    // the full span, and the transform phase alone rides along as detail.
+    const mockBuildClock = () =>
+      vi
+        .spyOn(Date, 'now')
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(100)
+        .mockReturnValueOnce(150);
+
     it('should send the correct build data - happy path', async () => {
-      vi.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValueOnce(100);
+      mockBuildClock();
       mockedGetCommonMetadata.mockReturnValue({} as CommonMetadata);
       mockedSendBuildData.mockResolvedValue();
       const bundle = generateViteOutputBundleData(true);
@@ -107,13 +124,13 @@ describe('viteBuildStatsPlugin', () => {
       (plugin.buildEnd as () => void)();
       await (plugin.closeBundle as () => Promise<void>)();
 
-      expect(mockedGetCommonMetadata).toHaveBeenCalledWith(100, 'my custom identifier');
+      expect(mockedGetCommonMetadata).toHaveBeenCalledWith(150, 'my custom identifier');
       expect(mockedSendBuildData).toHaveBeenCalledWith(expected);
     });
 
     it('should send the correct data - bootstrap chunk not found', async () => {
       // mock measurement
-      vi.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValueOnce(100);
+      mockBuildClock();
 
       // mock common utils
       mockedGetCommonMetadata.mockReturnValue({} as CommonMetadata);
@@ -140,13 +157,13 @@ describe('viteBuildStatsPlugin', () => {
         file: null, // Add missing file property
       };
 
-      expect(mockedGetCommonMetadata).toHaveBeenCalledWith(100, 'my custom identifier');
+      expect(mockedGetCommonMetadata).toHaveBeenCalledWith(150, 'my custom identifier');
       expect(mockedSendBuildData).toHaveBeenCalledWith(caseSpecificExpected);
     });
 
     it('should use process.env.npm_lifecycle_event as default custom identifier', async () => {
       // mock measurement
-      vi.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValueOnce(100);
+      mockBuildClock();
 
       // mock common utils
       mockedGetCommonMetadata.mockReturnValue({} as CommonMetadata);
@@ -180,7 +197,7 @@ describe('viteBuildStatsPlugin', () => {
         file: null, // Add missing file property
       };
 
-      expect(mockedGetCommonMetadata).toHaveBeenCalledWith(100, 'default_value');
+      expect(mockedGetCommonMetadata).toHaveBeenCalledWith(150, 'default_value');
       expect(mockedSendBuildData).toHaveBeenCalledWith(caseSpecificExpected);
     });
   });
@@ -399,6 +416,48 @@ describe('viteBuildStatsPlugin', () => {
         domContentLoadedMs: 900,
         firstContentfulPaintMs: 1000,
       });
+    });
+
+    // Prebundling is triggered by the first browser request, so it has not run at
+    // `listening` — sampling there could only ever report `false` or nothing.
+    it('reports prebundling on client ready, not on the dev server event', async () => {
+      const mockedStatSync = vi.mocked(statSync);
+      mockedStatSync.mockImplementation(() => {
+        throw new Error('ENOENT');
+      });
+
+      (plugin.configResolved as (config: ResolvedConfig) => void)({
+        root: '/test-root',
+      } as ResolvedConfig);
+
+      plugin.configureServer?.(mockServer as ViteDevServer);
+      httpServer.emit('listening');
+
+      const devserver = mockedSendCommandData.mock.calls.find(
+        (call) => (call[0] as { phase?: string }).phase === 'devserver',
+      );
+      expect(devserver?.[0]).not.toHaveProperty('prebundled');
+
+      // prebundling ran while the browser was booting
+      mockedStatSync.mockReturnValue({ mtimeMs: 42 } as ReturnType<typeof statSync>);
+
+      const handler = (
+        mockServer.middlewares?.use as jest.Mock<void, [MiddlewareHandler]>
+      ).mock.calls[0]?.[0] as MiddlewareHandler;
+      const req = new MockRequest('/__vite_timing_ready');
+      const res = new MockResponse();
+      const done = new Promise<void>((resolve) => {
+        res.end = vi.fn(() => resolve());
+      });
+      handler(req, res, vi.fn());
+      req.emit('data', JSON.stringify({ elapsedMs: 1200 }));
+      req.emit('end');
+      await done;
+
+      const clientReady = mockedSendCommandData.mock.calls.find(
+        (call) => (call[0] as { phase?: string }).phase === 'clientready',
+      );
+      expect(clientReady?.[0]).toMatchObject({ prebundled: true });
     });
   });
 });

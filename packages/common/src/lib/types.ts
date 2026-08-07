@@ -54,6 +54,12 @@ export interface ViteBuildData extends CommonMetadata {
   viteVersion: string | null;
   bundleStats?: ViteBundleStats;
   file: string | null;
+  /**
+   * Production builds only: the transform phase alone (`buildStart` to `buildEnd`),
+   * where `timeTaken` covers the whole build through `closeBundle`. The difference
+   * between the two is render, minify and emit.
+   */
+  transformTimeMs?: number;
 }
 
 /** A phase of the local dev cycle that is measured as a single span. */
@@ -94,7 +100,11 @@ export interface CommandBuildData extends CommonMetadata {
   npmTimers?: Record<string, number>;
 
   // dev server specific, all optional
-  /** Vite only: did this start (re)run dependency prebundling? undefined when unknown */
+  /**
+   * Vite only: did this start (re)run dependency prebundling? undefined when unknown.
+   * Reported on the `clientready` event, not `devserver`: prebundling is triggered by
+   * the first browser request, so at `listening` it has not run yet.
+   */
   prebundled?: boolean;
 
   // client-ready specific, all optional

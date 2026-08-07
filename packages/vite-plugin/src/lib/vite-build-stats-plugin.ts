@@ -75,6 +75,19 @@ export function viteBuildStatsPlugin(
     }
   };
 
+  /**
+   * Sampled at client ready, never at `listening`. Prebundling is triggered by the
+   * first browser request, so the metadata file is still untouched when the server
+   * starts listening — sampling there reported `false` on a warm cache and nothing
+   * on a cold one, i.e. it could never observe the cost it exists to measure.
+   */
+  const prebundledSinceStartup = (): boolean | undefined => {
+    const after = depsMetaMtime();
+    return depsMetaMtimeBefore === undefined && after === undefined
+      ? undefined
+      : after !== depsMetaMtimeBefore;
+  };
+
   const readBody = (req: IncomingMessage): Promise<string> =>
     new Promise((resolve) => {
       let body = '';
@@ -144,12 +157,6 @@ export function viteBuildStatsPlugin(
       // In dev mode closeBundle never fires, so without this the single number a
       // developer actually waits for — time to a usable dev server — is never measured.
       server.httpServer?.once('listening', () => {
-        const after = depsMetaMtime();
-        const prebundled =
-          depsMetaMtimeBefore === undefined && after === undefined
-            ? undefined
-            : after !== depsMetaMtimeBefore;
-
         void sendCommandData({
           ...getCommonMetadata(Date.now() - serverStart, customIdentifier),
           type: 'command',
@@ -157,7 +164,6 @@ export function viteBuildStatsPlugin(
           command: 'vite dev',
           exitCode: 0,
           success: true,
-          ...(prebundled === undefined ? {} : { prebundled }),
         });
 
         // deliver whatever install, or a previous Ctrl-C, left behind
@@ -244,6 +250,7 @@ export function viteBuildStatsPlugin(
               if (!clientReadyReported) {
                 clientReadyReported = true;
                 const payload = JSON.parse(body) as ClientReadyMessage;
+                const prebundled = prebundledSinceStartup();
                 await sendCommandData({
                   ...getCommonMetadata(
                     Math.round(Date.now() - serverStart),
@@ -256,6 +263,7 @@ export function viteBuildStatsPlugin(
                   success: true,
                   domContentLoadedMs: payload.domContentLoaded,
                   firstContentfulPaintMs: payload.firstContentfulPaint,
+                  ...(prebundled === undefined ? {} : { prebundled }),
                 });
               }
             } catch (err) {
@@ -325,12 +333,18 @@ export function viteBuildStatsPlugin(
             : undefined,
       };
 
+      // `buildEnd` fires when the module graph is complete, before renderChunk,
+      // generateBundle and writeBundle — so it excludes minification and emitting
+      // assets entirely. Under terser that is the majority of the build. Measure the
+      // whole thing, and keep the transform phase as detail rather than as the
+      // headline number, so this is comparable with the Rsbuild span.
       const buildStats: ViteBuildData = {
-        ...getCommonMetadata(buildEnd - buildStart, customIdentifier),
+        ...getCommonMetadata(Date.now() - buildStart, customIdentifier),
         type: 'vite',
         viteVersion: rollupVersion ?? null,
         bundleStats,
         file: null,
+        transformTimeMs: buildEnd - buildStart,
       };
 
       await sendBuildData(buildStats);
