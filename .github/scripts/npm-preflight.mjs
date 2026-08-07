@@ -44,13 +44,6 @@ try {
 }
 console.log(`npm identity: ${whoami}`);
 
-let access = {};
-try {
-  access = JSON.parse(npm(["access", "list", "packages", "--json"]));
-} catch {
-  // Non-fatal: some token types can't enumerate; we fall back to per-package existence.
-}
-
 const publishable = fs
   .readdirSync("packages")
   .map((dir) => path.join("packages", dir, "package.json"))
@@ -66,26 +59,39 @@ const existsOnNpm = async (name) => {
   return res.status === 200;
 };
 
+// Per-package collaborator check. Unlike `npm access list packages` (which only
+// works for org accounts and 403s for a personal account), this works whether
+// the packages are owned by a user or an org.
 let failed = false;
 for (const name of publishable) {
-  const perm = access[name];
-  if (perm === "read-write") {
-    console.log(`ok    ${name}: read-write`);
-    continue;
-  }
-  if (perm) {
-    console.log(`FAIL  ${name}: ${perm} (need read-write)`);
-    failed = true;
-    continue;
-  }
-  // Not in the token's access list: only a problem if the package already exists.
-  if (await existsOnNpm(name)) {
-    console.log(
-      `FAIL  ${name}: '${whoami}' has no access (owned by someone else) — this is your E403`,
+  let collaborators;
+  try {
+    collaborators = JSON.parse(
+      npm(["access", "list", "collaborators", name, "--json"]),
     );
+  } catch {
+    // Couldn't read collaborators: fine if the package doesn't exist yet
+    // (first publish), otherwise the token genuinely can't see/access it.
+    if (await existsOnNpm(name)) {
+      console.log(
+        `FAIL  ${name}: '${whoami}' cannot read collaborators (token lacks access)`,
+      );
+      failed = true;
+    } else {
+      console.log(`ok    ${name}: not yet on npm, valid token can first-publish`);
+    }
+    continue;
+  }
+
+  const perm = collaborators[whoami];
+  if (perm && perm.includes("write")) {
+    console.log(`ok    ${name}: ${whoami} has ${perm}`);
+  } else if (perm) {
+    console.log(`FAIL  ${name}: ${whoami} has ${perm} (need read-write)`);
     failed = true;
   } else {
-    console.log(`ok    ${name}: not yet on npm, valid token can first-publish`);
+    console.log(`FAIL  ${name}: ${whoami} is not a collaborator`);
+    failed = true;
   }
 }
 
