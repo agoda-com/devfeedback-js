@@ -154,8 +154,8 @@ Two tiers, and the first one needs nothing from you.
 ```json
 {
   "scripts": {
-    "preinstall": "node -e \"try{require('agoda-devfeedback-common/hooks/preinstall')}catch(e){}\"",
-    "postinstall": "node -e \"try{require('agoda-devfeedback-common/hooks/postinstall')}catch(e){}\""
+    "preinstall": "devfeedback-install preinstall || exit 0",
+    "postinstall": "devfeedback-install postinstall"
   },
   "devDependencies": {
     "agoda-devfeedback-common": "^2.0.0"

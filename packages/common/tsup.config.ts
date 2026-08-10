@@ -7,6 +7,7 @@ export default defineConfig({
         // they need their own stable entry points under dist/hooks
         'hooks/preinstall': 'src/hooks/preinstall.ts',
         'hooks/postinstall': 'src/hooks/postinstall.ts',
+        'cli/install': 'src/cli/install.ts',
     },
     format: ['cjs', 'esm'],
     splitting: true,
