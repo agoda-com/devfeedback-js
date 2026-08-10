@@ -5,6 +5,9 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "devfeedback-install": "./dist/cli/install.cjs"
+  },
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -24,7 +27,7 @@
     "dev": "tsup --watch",
     "check-types": "tsc --noEmit",
     "test": "vitest",
-    "postinstall": "node ./dist/hooks/postinstall.cjs --self || exit 0"
+    "postinstall": "node ./dist/cli/install.cjs postinstall --self || exit 0"
   },
   "dependencies": {
     "axios": "1.8.4",
