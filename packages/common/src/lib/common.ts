@@ -65,6 +65,7 @@ const getEndpointFromType = (type: string) => {
     vitehmr: process.env.VITE_ENDPOINT || 'http://compilation-metrics/vite',
     rsbuild: process.env.RSPACK_ENDPOINT || 'http://compilation-metrics/rspack',
     rspack: process.env.RSPACK_ENDPOINT || 'http://compilation-metrics/rspack',
+    rspackhmr: process.env.RSPACK_ENDPOINT || 'http://compilation-metrics/rspack',
     command: process.env.COMMAND_ENDPOINT || 'http://compilation-metrics/command',
   }[type];
 };

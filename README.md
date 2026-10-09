@@ -96,6 +96,16 @@ export default {
 };
 ```
 
+Using **raw Rspack** (`@rspack/cli`, `rspack serve`) without Rsbuild? Add the plugin to your `rspack.config.js` instead:
+
+```javascript
+const { RspackBuildStatsPlugin } = require('agoda-devfeedback-rsbuild');
+module.exports = {
+  // ... your config ...
+  plugins: [new RspackBuildStatsPlugin()],
+};
+```
+
 ### Advanced Usage: For the Overachievers 🏆
 
 All plugins accept a custom identifier for your builds. It's like a name tag for your builds! By default, they'll use your npm script name (like `yarn dev` or `yarn build`).
@@ -129,9 +139,19 @@ These arrive as a new event type, `type: "command"`, on the `COMMAND_ENDPOINT`:
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
 | `install`     | The package manager run, plus cold/warm and whether the lockfile changed                                                           | install hooks (npm, yarn, pnpm) |
 | `devserver`   | Time until the dev server is listening — the number that was previously never measured, because `closeBundle` does not fire in dev | Vite, Rsbuild, Rspack watch     |
-| `clientready` | Time until the app is usable in the browser, with DOMContentLoaded and first contentful paint                                      | Vite, Rsbuild                   |
+| `clientready` | Time until the app is usable in the browser, with DOMContentLoaded and first contentful paint                                      | Vite, Rsbuild, Rspack watch     |
 
 Aborted runs count too: Ctrl-C on a dev server produces a `devserver` event with `success: false` and `signal: "SIGINT"`. A developer who gave up waiting is the most interesting data point on the chart.
+
+### Raw Rspack in watch mode
+
+`RspackBuildStatsPlugin` only sees compiler hooks, not the dev server, so its spans are anchored on the compiler. All of them carry `command: "rspack watch"`, which is how a dashboard tells them apart from the Vite and Rsbuild numbers.
+
+- **`devserver`** runs from the first `watchRun` to the first completed compile. Unlike Vite and Rsbuild, which stop the clock when the server is listening, it **includes the first compile**: under `rspack serve` the server is not usable until that compile is done anyway, but don't put the two on one axis without a filter.
+- **`clientready`** runs from the same first `watchRun` until the browser has loaded the page and painted, with `domContentLoadedMs` and `firstContentfulPaintMs` as detail. Once per process: reloads and extra tabs are not new dev server starts.
+- **`rspackhmr`** (a separate event type on `RSPACK_ENDPOINT`, like Vite's `vitehmr`): edit → hot update applied in the browser, timed from the rebuild's `watchRun`. One per rebuild, however many tabs are open, carrying that rebuild's `compilationHash`. [Example](examples/rspackhmr.json).
+
+To report back, the plugin adds a small runtime module to the bundle, **in watch mode only**: production, one-off and child compilations are untouched. It connects to `ws://<page hostname>:<random port>`, so it also works when the dev server runs on a remote machine, as long as that port is reachable. No HMR (`hot: false`) means no `rspackhmr` events; `clientready` still works.
 
 ### Session correlation
 
