@@ -4,6 +4,7 @@ import { RspackBuildStatsPlugin } from './rspack-stats-plugin.js';
 import { Compiler, Stats, rspack } from '@rspack/core';
 import { getCommonMetadata, sendBuildData } from 'agoda-devfeedback-common';
 import type { RspackBuildData } from 'agoda-devfeedback-common';
+import { createMockCompilation } from '../utils/test-data-generator';
 
 vi.mock('agoda-devfeedback-common', () => ({
   getCommonMetadata: vi.fn(),
@@ -25,8 +26,10 @@ const createMockStats = (options: {
   endTime: number;
   hash: string;
   modules: Array<{ cached?: boolean; built?: boolean }>;
+  compilation?: ReturnType<typeof createMockCompilation>['compilation'];
 }): Stats => {
   return {
+    compilation: options.compilation,
     startTime: options.startTime,
     endTime: options.endTime,
     hash: options.hash,
@@ -114,6 +117,52 @@ describe('RspackBuildStatsPlugin', () => {
 
     expect(mockedGetCommonMetadata).toHaveBeenCalledWith(100, 'test');
     expect(mockedSendBuildData).toHaveBeenCalledWith(expect.objectContaining(expected));
+  });
+
+  describe('bundle size budget', () => {
+    const compilation = createMockCompilation(
+      { bootstrap: ['bootstrap.js'] },
+      { 'bootstrap.js': 1500 },
+    ).compilation;
+
+    const runDone = async (compiler: Compiler) => {
+      const doneCallback = (compiler.hooks.done.tapAsync as any).mock.calls[0][1];
+      const startTime = Date.now();
+      await doneCallback(
+        createMockStats({
+          startTime,
+          endTime: startTime + 100,
+          hash: 'h',
+          modules: [],
+          compilation,
+        }),
+        vi.fn(),
+      );
+    };
+
+    it('reports the bootstrap chunk size and limit on a production build', async () => {
+      new RspackBuildStatsPlugin({ bootstrapBundleSizeLimitKb: 2 }).apply(mockCompiler);
+
+      await runDone(mockCompiler);
+
+      expect(mockedSendBuildData).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bundleStats: {
+            bootstrapChunkSizeBytes: 1500,
+            bootstrapChunkSizeLimitBytes: 2000,
+          },
+        }),
+      );
+    });
+
+    it('reports nothing for a watch build', async () => {
+      new RspackBuildStatsPlugin({ bootstrapBundleSizeLimitKb: 2 }).apply(mockCompiler);
+      (mockCompiler.hooks.watchRun.tap as any).mock.calls[0][1]();
+
+      await runDone(mockCompiler);
+
+      expect(mockedSendBuildData.mock.calls[0][0]).not.toHaveProperty('bundleStats');
+    });
   });
 
   it('should use process.env.npm_lifecycle_event as default custom identifier', async () => {

@@ -22,5 +22,6 @@ export type {
   RspackBuildData,
   WebpackBuildData,
   DevFeedbackEvent,
+  BundleStats,
   ViteBundleStats,
 } from './lib/types';

@@ -16,9 +16,17 @@ import type {
   RspackBuildData,
   DevFeedbackEvent,
 } from 'agoda-devfeedback-common';
+import { getBundleStats } from './bootstrap-chunk-size';
+
+export interface RspackBuildStatsPluginOptions {
+  customIdentifier?: string;
+  /** Production builds report `bundleStats` with this budget for the chunk named `bootstrap`. */
+  bootstrapBundleSizeLimitKb?: number;
+}
 
 class RspackBuildStatsPlugin {
   private customIdentifier: string;
+  private bootstrapBundleSizeLimitKb: number | undefined;
   private devFeedbackBuffer: DevFeedbackEvent[] = [];
   private wsServer: WebSocketServerType;
   private httpServer: HttpServerType;
@@ -28,9 +36,10 @@ class RspackBuildStatsPlugin {
   private abortRegistered = false;
   private flushedOnce = false;
 
-  constructor(options: { customIdentifier?: string } = {}) {
+  constructor(options: RspackBuildStatsPluginOptions = {}) {
     this.customIdentifier =
       options.customIdentifier || process.env.npm_lifecycle_event || '';
+    this.bootstrapBundleSizeLimitKb = options.bootstrapBundleSizeLimitKb;
     this.httpServer = createServer();
     this.wsServer = new WebSocketServer({ server: this.httpServer });
     this.setupWebSocketServer();
@@ -122,6 +131,10 @@ class RspackBuildStatsPlugin {
       nbrOfRebuiltModules: this.getRebuiltModulesCount(statsJson),
       devFeedback: this.devFeedbackBuffer,
     };
+    // a dev build's chunk sizes say nothing about the production budget
+    if (this.watchStart === undefined) {
+      buildStats.bundleStats = getBundleStats([stats], this.bootstrapBundleSizeLimitKb);
+    }
 
     await sendBuildData(buildStats);
 
