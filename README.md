@@ -153,6 +153,7 @@ These arrive as a new event type, `type: "command"`, on the `COMMAND_ENDPOINT`:
 | `install`     | The package manager run, plus cold/warm and whether the lockfile changed                                                           | install hooks (npm, yarn, pnpm) |
 | `devserver`   | Time until the dev server is listening — the number that was previously never measured, because `closeBundle` does not fire in dev | Vite, Rsbuild, Rspack watch     |
 | `clientready` | Time until the app is usable in the browser, with DOMContentLoaded and first contentful paint                                      | Vite, Rsbuild, Rspack watch     |
+| `codegen`, `typecheck`, `lint`, `test`, `build`, `other` | A package script or task-runner task, see [Package scripts and task runners](#package-scripts-and-task-runners) | pnpm script-shell wrapper, Nx plugin |
 
 Aborted runs count too: Ctrl-C on a dev server produces a `devserver` event with `success: false` and `signal: "SIGINT"`. A developer who gave up waiting is the most interesting data point on the chart.
 
@@ -226,6 +227,68 @@ Known gaps, so nobody is surprised:
     (pnpm 10 and earlier call this `onlyBuiltDependencies`.)
 - npm only: with `timing=true` in `.npmrc`, npm's own per-phase timers are scraped from `~/.npm/_logs/*-timing.json` and attached as `npmTimers`. That is where you find out a Playwright browser download or a `node-gyp` rebuild is what actually costs you three minutes.
 
+### Package scripts and task runners
+
+The bundler plugins only see the bundler. Typecheck, lint, test, codegen and every other package script run around it, so `agoda-devfeedback-common` ships two more emitters for those. Both produce `command` events that share the `sessionId`, the spool and the transport with everything else.
+
+**pnpm: every `pnpm run <script>` (pnpm ≥ 10.13, macOS and Linux).** `devfeedback-shell` is a `scriptShell` that runs the real shell (`/bin/sh`) and records the script. Wire it up in `.pnpmfile.cjs`, with `agoda-devfeedback-common` as a root devDependency:
+
+```js
+// .pnpmfile.cjs
+try { module.exports = require('agoda-devfeedback-common/pnpmfile').pnpmfile(__dirname); } catch { module.exports = {}; }
+```
+
+`hooks.updateConfig` runs on every pnpm command and sets `scriptShell` to the absolute path of the wrapper only once it is installed, so a cold clone's first `pnpm install` runs exactly as before. Don't put `script-shell=./node_modules/.bin/devfeedback-shell` in `.npmrc`: that path doesn't exist on a fresh clone and breaks the install itself. If your pnpmfile already has hooks, compose `devfeedbackUpdateConfig(__dirname)` from the same module into your own `updateConfig`.
+
+**Nx: every task, cache hits included (Nx ≥ 20.4).** Register the plugin in `nx.json`; it uses `postTasksExecution` and needs no dependency on `nx` beyond the one you already have:
+
+```json
+{ "plugins": ["agoda-devfeedback-common/nx"] }
+```
+
+Scripts that Nx runs are recorded by the Nx plugin, not the wrapper, so nothing is counted twice. A `pnpm build` that runs `nx run-many -t build` gives one `pnpm run build` event for the whole run and one `nx run build` event per project, all with `rootCommand: "pnpm run build"`.
+
+What each event adds to the usual `command` fields:
+
+| Field         | Example                     | Meaning                                                                             |
+| ------------- | --------------------------- | ----------------------------------------------------------------------------------- |
+| `phase`       | `test`                      | From the script or target name, see below                                           |
+| `target`      | `test:unit`                 | Script or task-runner target name                                                   |
+| `project`     | `@acme/web`                 | Workspace package or Nx project. `projectName` stays the repo                       |
+| `runner`      | `pnpm`, `nx`                | What ran it                                                                         |
+| `command`     | `pnpm run test:unit`        | Built from the runner and the target                                                |
+| `rootCommand` | `nx run-many -t build,test` | The top-level invocation, for nested `pnpm run` calls and Nx tasks                  |
+| `outcome`     | `cache`                     | `success`, `failure`, `aborted` (signal or exit 130), `cache` (Nx cache hit), `skipped` |
+| `runId`       | `1481533057…`               | Nx only: one per Nx invocation                                                      |
+| `exitCode`, `signal` |                      | `130` and `SIGINT` for Ctrl-C                                                       |
+
+Phases come from the name: `typecheck`/`type-check`/`tsc`/`check-types` → `typecheck`, `lint`/`eslint`/`lint:*` → `lint`, `test`/`test:*`/`vitest`/`jest` → `test`, `build`/`build:*` → `build`, `codegen`/`generate`/`gen:*` → `codegen`, anything else → `other` with the name in `target`. Override it per repo in the root `package.json`:
+
+```json
+{
+  "devfeedback": {
+    "phases": { "e2e": "test", "openapi": "codegen" },
+    "skip": ["dev", "start", "serve", "watch", "storybook"]
+  }
+}
+```
+
+`skip` replaces the default list, which is `dev`, `start`, `serve` and `watch`: a long-running command's duration is the length of the session, not a measurement, and dev server time-to-ready already comes from the bundler plugins. A skipped script still passes `DEVFEEDBACK_SESSION_ID` on, so the dev server it starts joins the session. Nx continuous tasks are skipped for the same reason. Install lifecycle scripts (`preinstall`, `postinstall`, `prepare`, …) are part of the `install` span and are never recorded on their own, and neither are dependencies' own scripts.
+
+What is never sent:
+
+- **No argv, no script bodies, no output.** `command`, `target` and `rootCommand` are built only from the script name, the Nx project and target, the runner and a known Nx verb. `npm_lifecycle_script` and Nx `terminalOutput` are never read. There is no free-text error field.
+- **Nothing from CI.** Both emitters do nothing when `CI` is set, unless `DEVFEEDBACK_CI=true`. The bundler plugins are unchanged.
+
+And what the wrapper does not change: stdio, cwd, exit codes and signals pass straight through, SIGINT/SIGTERM/SIGHUP are forwarded to the script, and under pnpm 12 the wrapper adds back the SIGINT trap pnpm wraps scripts in for `sh`, `bash` and `dash` (pnpm drops it for a custom `scriptShell`), so Ctrl-C behaves exactly as it would without it. Events are handed to a detached process that adds the metadata, spools and delivers them after the script has returned; the wrapper itself never touches the network. It does cost one Node.js process start per `pnpm run`, and loading a pnpmfile has a cost of its own on pnpm 12.
+
+Known gaps:
+
+- **Windows:** not wrapped. pnpm only accepts a real `.exe` as `scriptShell`, and a Node.js bin is a `.cmd` shim there, so the pnpmfile hook leaves Windows alone. The Nx plugin works everywhere.
+- A repo that already sets `scriptShell` keeps it and is not wrapped. To wrap a non-default shell, set `DEVFEEDBACK_SHELL=/bin/bash` in the developer's environment.
+- With `shell-emulator=true` pnpm ignores `scriptShell`, so nothing is recorded.
+- npm and yarn scripts are not covered yet.
+
 ### Rollout tiers
 
 | Tier                                                                            | Repo change                                  | What you get                                |
@@ -234,6 +297,8 @@ Known gaps, so nobody is surprised:
 | Direct install                                                                  | one plugin line                              | same                                        |
 | Exact install timing                                                            | two `scripts` lines + a direct devDependency | true install span and cold-clone accuracy   |
 | npm repos, opt-in                                                               | one `.npmrc` line (`timing=true`)            | per-phase and per-package install breakdown |
+| pnpm scripts                                                                    | a one-line `.pnpmfile.cjs` + a direct devDependency | every `pnpm run`: typecheck, lint, test, codegen, … |
+| Nx                                                                              | one `nx.json` plugin entry                   | every Nx task, cache hits included          |
 | Advanced                                                                        | `DEVFEEDBACK_SESSION_ID` in your shell       | precise session boundaries                  |
 
 ### Staying off the critical path
