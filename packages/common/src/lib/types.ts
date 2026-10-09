@@ -23,7 +23,8 @@ export interface CommonMetadata {
 }
 
 export interface RspackBuildData extends CommonMetadata {
-  type: 'rspack' | 'rsbuild';
+  /** `rspackhmr`: raw Rspack, edit → hot update applied in the browser */
+  type: 'rspack' | 'rsbuild' | 'rspackhmr';
   toolVersion: string | null;
   compilationHash: string | null;
   nbrOfCachedModules: number;
