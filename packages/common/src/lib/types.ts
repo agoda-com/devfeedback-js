@@ -71,7 +71,11 @@ export type CommandPhase =
   | 'test'
   | 'build'
   | 'devserver'
-  | 'clientready';
+  | 'clientready'
+  /** a package script or task-runner target that matches none of the phases above */
+  | 'other';
+
+export type CommandOutcome = 'success' | 'failure' | 'aborted' | 'cache' | 'skipped';
 
 export type PackageManager = 'npm' | 'yarn' | 'pnpm';
 
@@ -115,6 +119,23 @@ export interface CommandBuildData extends CommonMetadata {
   /** 'SIGINT' = developer gave up waiting */
   signal?: string;
   errorCount?: number;
+
+  // package script / task runner specific, all optional
+  /** Richer than `success`: distinguishes cache hits and skipped tasks from real executions. */
+  outcome?: CommandOutcome;
+  /** What ran the command. */
+  runner?: 'pnpm' | 'npm' | 'yarn' | 'nx' | (string & {});
+  /** Monorepo package or task-runner project. `projectName` stays the repo. */
+  project?: string;
+  /** Script or task-runner target name, e.g. `build`, `test:unit`. */
+  target?: string;
+  /**
+   * Structured top-level invocation built from runner + verb + target, e.g.
+   * `nx run-many -t build`. Never the typed command line.
+   */
+  rootCommand?: string;
+  /** Task-runner invocation id, finer-grained than `sessionId`. */
+  runId?: string;
 
   /** set by the spool when an event is delivered late */
   spooledAt?: number;

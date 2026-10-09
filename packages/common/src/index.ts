@@ -11,12 +11,17 @@ export {
   parentStartedAt,
 } from './lib/install';
 export { collectNpmTimings } from './lib/npm-timing';
+export { isCiSuppressed } from './lib/ci';
+export { phaseFor } from './lib/phase';
+export { workspaceRoot, readCommandConfig, DEFAULT_SKIP } from './lib/workspace';
+export type { CommandConfig } from './lib/workspace';
 export type { SessionState } from './lib/session';
 export type { GitInfo } from './lib/git';
 export type {
   CommonMetadata,
   CommandBuildData,
   CommandPhase,
+  CommandOutcome,
   PackageManager,
   ViteBuildData,
   RspackBuildData,
