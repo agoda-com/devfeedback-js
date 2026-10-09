@@ -116,6 +116,23 @@ describe('RspackBuildStatsPlugin', () => {
     expect(mockedSendBuildData).toHaveBeenCalledWith(expect.objectContaining(expected));
   });
 
+  it.each([
+    ['a string', 'my-build'],
+    ['an options object', { customIdentifier: 'my-build' }],
+  ])('should accept the custom identifier as %s', async (_, options) => {
+    const identifiedPlugin = new RspackBuildStatsPlugin(options);
+    identifiedPlugin.apply(mockCompiler);
+
+    const doneCallback = (mockCompiler.hooks.done.tapAsync as any).mock.calls[0][1];
+    const startTime = Date.now();
+    await doneCallback(
+      createMockStats({ startTime, endTime: startTime + 100, hash: 'testhash', modules: [] }),
+      vi.fn(),
+    );
+
+    expect(mockedGetCommonMetadata).toHaveBeenCalledWith(100, 'my-build');
+  });
+
   it('should use process.env.npm_lifecycle_event as default custom identifier', async () => {
     // Mock process.env
     const originalEnv = process.env;
