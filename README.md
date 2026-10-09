@@ -109,9 +109,12 @@ new WebpackBuildStatsPlugin('production-build-deluxe');
 // Vite
 viteBuildStatsPlugin('vite-build-extraordinaire');
 
-// Rspack
-RsbuildBuildStatsPlugin.setup({ identifier: 'rspack-build-supreme' });
+// Raw Rspack (rspack.config.js) — positional, or as an options object
+new RspackBuildStatsPlugin('rspack-build-supreme');
+new RspackBuildStatsPlugin({ customIdentifier: 'rspack-build-supreme' });
 ```
+
+The Rsbuild plugin takes no options and always uses the npm script name.
 
 Want to track bootstrap chunk sizes? We've got you covered! Pass a size limit (in KB) as the second parameter (Vite and Webpack only):
 
@@ -169,12 +172,28 @@ Known gaps, so nobody is surprised:
 
 - Install events are **spooled, not sent**. An install must never wait on the network, so events are written to a small local NDJSON file and delivered by the next dev server or build start. `spooledAt` tells you the delivery was deferred. Nobody watches an install dashboard in real time.
 - `--ignore-scripts` skips everything here.
-- **pnpm blocks dependency lifecycle scripts by default.** Allow it once during dev machine bootstrap, in `~/.config/pnpm/config.yaml`, so repos stay untouched:
-  ```yaml
-  allowBuilds:
-    agoda-devfeedback-common: true
-  ```
-  (pnpm 10 and earlier call this `onlyBuiltDependencies`.)
+- **pnpm blocks dependency lifecycle scripts by default.** Allow `agoda-devfeedback-common` in one of two places:
+  - **In the repo** (recommended for monorepos that already keep a build allowlist): add it to the allowlist in `pnpm-workspace.yaml`, or in the `pnpm` field of the root `package.json`. Every clone then works without a bootstrap step.
+    ```yaml
+    # pnpm-workspace.yaml, newer pnpm
+    allowBuilds:
+      agoda-devfeedback-common: true
+    ```
+    ```yaml
+    # pnpm-workspace.yaml, pnpm 10 and earlier
+    onlyBuiltDependencies:
+      - agoda-devfeedback-common
+    ```
+    ```jsonc
+    // root package.json, pnpm 10 and earlier
+    "pnpm": { "onlyBuiltDependencies": ["agoda-devfeedback-common"] }
+    ```
+  - **Per machine**, once during dev machine bootstrap, in `~/.config/pnpm/config.yaml`, so repos stay untouched:
+    ```yaml
+    allowBuilds:
+      agoda-devfeedback-common: true
+    ```
+    (pnpm 10 and earlier call this `onlyBuiltDependencies`.)
 - npm only: with `timing=true` in `.npmrc`, npm's own per-phase timers are scraped from `~/.npm/_logs/*-timing.json` and attached as `npmTimers`. That is where you find out a Playwright browser download or a `node-gyp` rebuild is what actually costs you three minutes.
 
 ### Rollout tiers

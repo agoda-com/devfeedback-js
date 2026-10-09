@@ -28,9 +28,14 @@ class RspackBuildStatsPlugin {
   private abortRegistered = false;
   private flushedOnce = false;
 
-  constructor(options: { customIdentifier?: string } = {}) {
-    this.customIdentifier =
-      options.customIdentifier || process.env.npm_lifecycle_event || '';
+  /**
+   * Accepts the identifier positionally, like the webpack and Vite plugins
+   * (`new RspackBuildStatsPlugin('my-build')`), or as `{ customIdentifier }`.
+   */
+  constructor(options: string | { customIdentifier?: string } = {}) {
+    const customIdentifier =
+      typeof options === 'string' ? options : options?.customIdentifier;
+    this.customIdentifier = customIdentifier || process.env.npm_lifecycle_event || '';
     this.httpServer = createServer();
     this.wsServer = new WebSocketServer({ server: this.httpServer });
     this.setupWebSocketServer();
