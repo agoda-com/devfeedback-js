@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RsbuildBuildStatsPlugin } from './rsbuild-stats-plugin';
+import { RsbuildBuildStatsPlugin, rsbuildBuildStatsPlugin } from './rsbuild-stats-plugin';
+import { createMockCompilation } from '../utils/test-data-generator';
 import { RsbuildPluginAPI } from '@rsbuild/core';
 import { Rspack } from '@rsbuild/core';
 import { WebSocket } from 'ws';
@@ -33,8 +34,10 @@ const createMockStats = (options: {
   endTime: number;
   hash: string;
   modules: Array<{ cached?: boolean; built?: boolean }>;
+  compilation?: ReturnType<typeof createMockCompilation>['compilation'];
 }): Rspack.Stats => {
   return {
+    compilation: options.compilation,
     startTime: options.startTime,
     endTime: options.endTime,
     hash: options.hash,
@@ -126,6 +129,65 @@ describe('RsbuildBuildStatsPlugin', () => {
       process.env.npm_lifecycle_event,
     );
     expect(mockedSendBuildData).toHaveBeenCalledWith(expect.objectContaining(expected));
+  });
+
+  describe('bundle size budget', () => {
+    const compilation = createMockCompilation(
+      { bootstrap: ['bootstrap.js'] },
+      { 'bootstrap.js': 1500 },
+    ).compilation;
+    const stats = () => {
+      const startTime = Date.now();
+      return createMockStats({
+        startTime,
+        endTime: startTime + 100,
+        hash: 'h',
+        modules: [],
+        compilation,
+      });
+    };
+
+    it('reports the bootstrap chunk size and limit on a production build', async () => {
+      await rsbuildBuildStatsPlugin({ bootstrapBundleSizeLimitKb: 2 }).setup(
+        mockApi as RsbuildPluginAPI,
+      );
+
+      await (mockApi.onAfterBuild as any).mock.calls[0][0]({ stats: stats() });
+
+      expect(mockedSendBuildData).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bundleStats: {
+            bootstrapChunkSizeBytes: 1500,
+            bootstrapChunkSizeLimitBytes: 2000,
+          },
+        }),
+      );
+    });
+
+    it('reports the size without a limit from the plain plugin', async () => {
+      await RsbuildBuildStatsPlugin.setup(mockApi as RsbuildPluginAPI);
+
+      await (mockApi.onAfterBuild as any).mock.calls[0][0]({ stats: stats() });
+
+      expect(mockedSendBuildData).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bundleStats: {
+            bootstrapChunkSizeBytes: 1500,
+            bootstrapChunkSizeLimitBytes: undefined,
+          },
+        }),
+      );
+    });
+
+    it('reports nothing for a dev compile', async () => {
+      await rsbuildBuildStatsPlugin({ bootstrapBundleSizeLimitKb: 2 }).setup(
+        mockApi as RsbuildPluginAPI,
+      );
+
+      await (mockApi.onDevCompileDone as any).mock.calls[0][0]({ stats: stats() });
+
+      expect(mockedSendBuildData.mock.calls[0][0]).not.toHaveProperty('bundleStats');
+    });
   });
 
   it('should use process.env.npm_lifecycle_event as custom identifier', async () => {

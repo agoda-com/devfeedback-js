@@ -16,9 +16,17 @@ import type {
   RspackBuildData,
   DevFeedbackEvent,
 } from 'agoda-devfeedback-common';
+import { getBundleStats } from './bootstrap-chunk-size';
+
+export interface RspackBuildStatsPluginOptions {
+  customIdentifier?: string;
+  /** Production builds report `bundleStats` with this budget for the chunk named `bootstrap`. */
+  bootstrapBundleSizeLimitKb?: number;
+}
 
 class RspackBuildStatsPlugin {
   private customIdentifier: string;
+  private bootstrapBundleSizeLimitKb: number | undefined;
   private devFeedbackBuffer: DevFeedbackEvent[] = [];
   private wsServer: WebSocketServerType;
   private httpServer: HttpServerType;
@@ -30,12 +38,13 @@ class RspackBuildStatsPlugin {
 
   /**
    * Accepts the identifier positionally, like the webpack and Vite plugins
-   * (`new RspackBuildStatsPlugin('my-build')`), or as `{ customIdentifier }`.
+   * (`new RspackBuildStatsPlugin('my-build')`), or in the options object.
    */
-  constructor(options: string | { customIdentifier?: string } = {}) {
-    const customIdentifier =
-      typeof options === 'string' ? options : options?.customIdentifier;
+  constructor(options: string | RspackBuildStatsPluginOptions = {}) {
+    const { customIdentifier, bootstrapBundleSizeLimitKb } =
+      typeof options === 'string' ? { customIdentifier: options } : (options ?? {});
     this.customIdentifier = customIdentifier || process.env.npm_lifecycle_event || '';
+    this.bootstrapBundleSizeLimitKb = bootstrapBundleSizeLimitKb;
     this.httpServer = createServer();
     this.wsServer = new WebSocketServer({ server: this.httpServer });
     this.setupWebSocketServer();
@@ -81,20 +90,18 @@ class RspackBuildStatsPlugin {
   private registerAbortHandler() {
     if (this.abortRegistered) return;
     this.abortRegistered = true;
-    onAbort(
-      (signal): CommandBuildData => ({
-        ...getCommonMetadata(
-          this.watchStart ? Date.now() - this.watchStart : 0,
-          this.customIdentifier,
-        ),
-        type: 'command',
-        phase: 'devserver',
-        command: 'rspack watch',
-        exitCode: 130,
-        success: false,
-        signal,
-      }),
-    );
+    onAbort((signal): CommandBuildData => ({
+      ...getCommonMetadata(
+        this.watchStart ? Date.now() - this.watchStart : 0,
+        this.customIdentifier,
+      ),
+      type: 'command',
+      phase: 'devserver',
+      command: 'rspack watch',
+      exitCode: 130,
+      success: false,
+      signal,
+    }));
   }
 
   private setupWebSocketServer() {
@@ -127,6 +134,10 @@ class RspackBuildStatsPlugin {
       nbrOfRebuiltModules: this.getRebuiltModulesCount(statsJson),
       devFeedback: this.devFeedbackBuffer,
     };
+    // a dev build's chunk sizes say nothing about the production budget
+    if (this.watchStart === undefined) {
+      buildStats.bundleStats = getBundleStats([stats], this.bootstrapBundleSizeLimitKb);
+    }
 
     await sendBuildData(buildStats);
 

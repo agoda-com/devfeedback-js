@@ -29,6 +29,8 @@ export interface RspackBuildData extends CommonMetadata {
   nbrOfCachedModules: number;
   nbrOfRebuiltModules: number;
   devFeedback?: DevFeedbackEvent[];
+  /** Production builds only. */
+  bundleStats?: BundleStats;
 }
 
 export interface WebpackBuildData extends Omit<RspackBuildData, 'type'> {
@@ -44,10 +46,13 @@ export interface DevFeedbackEvent {
   file?: string;
 }
 
-export interface ViteBundleStats {
+/** Size of the chunk named `bootstrap`, and the budget the build was configured with. */
+export interface BundleStats {
   bootstrapChunkSizeBytes?: number;
   bootstrapChunkSizeLimitBytes?: number;
 }
+
+export type ViteBundleStats = BundleStats;
 
 export interface ViteBuildData extends CommonMetadata {
   type: 'vite' | 'vitehmr';

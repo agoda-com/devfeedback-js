@@ -114,13 +114,23 @@ new RspackBuildStatsPlugin('rspack-build-supreme');
 new RspackBuildStatsPlugin({ customIdentifier: 'rspack-build-supreme' });
 ```
 
-The Rsbuild plugin takes no options and always uses the npm script name.
+The Rsbuild plugin always uses the npm script name.
 
-Want to track bootstrap chunk sizes? We've got you covered! Pass a size limit (in KB) as the second parameter (Vite and Webpack only):
+Want to track bootstrap chunk sizes? We've got you covered! Pass a size limit (in KB) and production builds report `bundleStats` for the chunk named `bootstrap` (Vite, Rspack and Rsbuild):
 
 ```javascript
+// Vite: the second parameter
 viteBuildStatsPlugin('vite-build-extraordinaire', 1000); // 1 mega byte
+
+// Raw Rspack: an option
+new RspackBuildStatsPlugin({ bootstrapBundleSizeLimitKb: 1000 });
+
+// Rsbuild: use the factory instead of the plain plugin
+import { rsbuildBuildStatsPlugin } from 'agoda-devfeedback-rsbuild';
+plugins: [rsbuildBuildStatsPlugin({ bootstrapBundleSizeLimitKb: 1000 })];
 ```
+
+`bootstrapChunkSizeBytes` is the size of the chunk's emitted JavaScript, and `bootstrapChunkSizeLimitBytes` is the limit you passed, in bytes. The size is reported without a limit too, and is left out when there is no `bootstrap` chunk. Rspack and Rsbuild only report it for production builds, since dev chunk sizes say nothing about the budget. See [examples/rspack.json](examples/rspack.json).
 
 ## The Whole Dev Cycle, Not Just The Compile
 
