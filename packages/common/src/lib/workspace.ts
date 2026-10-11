@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, parse, resolve } from 'node:path';
+import { isCommandPhase } from './phase';
 import type { CommandPhase } from './types';
 
 /** Markers of a workspace root, most specific first. */
@@ -51,10 +52,19 @@ export const readCommandConfig = (root: string): CommandConfig => {
       readFileSync(join(root, 'package.json'), 'utf8'),
     )?.devfeedback;
     if (field && typeof field === 'object') {
-      const phases =
-        field.phases && typeof field.phases === 'object' && !Array.isArray(field.phases)
-          ? (field.phases as Record<string, CommandPhase>)
-          : {};
+      const phases: Record<string, CommandPhase> = {};
+      if (
+        field.phases &&
+        typeof field.phases === 'object' &&
+        !Array.isArray(field.phases)
+      ) {
+        // a typo must not reach ingestion as a phase of its own
+        for (const [name, phase] of Object.entries(
+          field.phases as Record<string, unknown>,
+        )) {
+          phases[name] = isCommandPhase(phase) ? phase : 'other';
+        }
+      }
       const skip = Array.isArray(field.skip)
         ? (field.skip as unknown[]).filter((s): s is string => typeof s === 'string')
         : DEFAULT_SKIP;

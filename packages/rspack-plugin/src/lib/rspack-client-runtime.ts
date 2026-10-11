@@ -29,7 +29,7 @@ export const clientRuntimeSource = (port: number): string => `
     var send = function (msg) {
       try {
         if (socket.readyState === 1) socket.send(JSON.stringify(msg));
-        else if (socket.readyState === 0) queue.push(msg);
+        else if (socket.readyState === 0 && queue.length < 10) queue.push(msg);
       } catch (e) {}
     };
     socket.addEventListener('open', function () {

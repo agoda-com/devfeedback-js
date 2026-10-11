@@ -94,29 +94,42 @@ export const planScript = (
 };
 
 /**
- * pnpm 12 prefixes every script it runs through a known POSIX shell with this trap, so
- * a script survives a first SIGINT and re-raises it only once the foreground command
- * died of it. It picks the shell by basename, so with the wrapper as `scriptShell` it
- * no longer adds it. Adding it back keeps Ctrl-C behaving exactly as it would without
- * the wrapper.
+ * pnpm prefixes every script it runs through a Bourne shell with this trap, so a script
+ * survives a first SIGINT and re-raises it only once the foreground command died of it.
+ * It picks the shell by basename, so with the wrapper as `scriptShell` it no longer adds
+ * it. Adding it back keeps Ctrl-C behaving exactly as it would without the wrapper.
+ *
+ * Copied from `INTERRUPT_STATUS_TRAP` and `BOURNE_SHELLS` in pnpm's
+ * `exec/npm-lifecycle/src/selectShell.ts` (pnpm/pnpm#15854, first released in 11.28.1
+ * and 12.8.0). `pnpm-sigint-trap.spec.ts` compares this against a real pnpm.
  */
 export const PNPM_SIGINT_TRAP = `trap 'if [ "$?" -eq 130 ]; then trap - INT; kill -s INT $$; fi; trap "trap - INT; kill -s INT $$" INT' INT; `;
 
-/** shells pnpm 12 was observed to add the trap for */
-const PNPM_TRAP_SHELLS = new Set(['sh', 'bash', 'dash']);
+const PNPM_TRAP_SHELLS = new Set(['sh', 'dash', 'bash', 'ash', 'zsh', 'ksh', 'mksh']);
 
-/** Arguments for the real shell: unchanged, apart from pnpm 12's SIGINT trap. */
+/** The pnpm releases that add the trap: 11.28.1 and later 11.x, and 12.8.0 and later. */
+export const pnpmAddsSigintTrap = (version: string | undefined): boolean => {
+  const [major = NaN, minor = NaN, patch = NaN] = (version ?? '')
+    .split('.')
+    .map((part) => Number.parseInt(part, 10));
+  if (major === 11) return minor > 28 || (minor === 28 && patch >= 1);
+  if (major === 12) return minor >= 8;
+  return major > 12;
+};
+
+/** Arguments for the real shell: unchanged, apart from pnpm's SIGINT trap. */
 export const realShellArgs = (
   args: string[],
   realShell: string,
   env: NodeJS.ProcessEnv = process.env,
 ): string[] => {
   const { packageManager, packageManagerVersion } = detectPackageManager(env);
-  const major = Number(packageManagerVersion?.split('.')[0]);
-  const shellName = realShell.split('/').pop() ?? '';
+  const shellName = (realShell.split(/[\\/]/).pop() ?? '')
+    .toLowerCase()
+    .replace(/\.exe$/, '');
   if (
     packageManager === 'pnpm' &&
-    major >= 12 &&
+    pnpmAddsSigintTrap(packageManagerVersion) &&
     PNPM_TRAP_SHELLS.has(shellName) &&
     args.length === 2 &&
     args[0] === '-c' &&

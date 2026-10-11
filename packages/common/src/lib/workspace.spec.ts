@@ -61,6 +61,28 @@ describe('workspace', () => {
       });
     });
 
+    it('maps a phase that is not a known phase to other', () => {
+      writeFileSync(
+        join(root, 'package.json'),
+        JSON.stringify({
+          devfeedback: {
+            phases: {
+              e2e: 'tset',
+              storybook: 42,
+              format: 'constructor',
+              openapi: 'codegen',
+            },
+          },
+        }),
+      );
+      expect(readCommandConfig(root).phases).toEqual({
+        e2e: 'other',
+        storybook: 'other',
+        format: 'other',
+        openapi: 'codegen',
+      });
+    });
+
     it('keeps the default skip list when only phases are configured', () => {
       writeFileSync(
         join(root, 'package.json'),

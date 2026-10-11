@@ -163,7 +163,7 @@ Aborted runs count too: Ctrl-C on a dev server produces a `devserver` event with
 
 - **`devserver`** runs from the first `watchRun` to the first completed compile. Unlike Vite and Rsbuild, which stop the clock when the server is listening, it **includes the first compile**: under `rspack serve` the server is not usable until that compile is done anyway, but don't put the two on one axis without a filter.
 - **`clientready`** runs from the same first `watchRun` until the browser has loaded the page and painted, with `domContentLoadedMs` and `firstContentfulPaintMs` as detail. Once per process: reloads and extra tabs are not new dev server starts.
-- **`rspackhmr`** (a separate event type on `RSPACK_ENDPOINT`, like Vite's `vitehmr`): edit → hot update applied in the browser, timed from the rebuild's `watchRun`. One per rebuild, however many tabs are open, carrying that rebuild's `compilationHash`. [Example](examples/rspackhmr.json).
+- **`rspackhmr`** (a separate event type on `RSPACK_ENDPOINT`, like Vite's `vitehmr`): edit → hot update applied in the browser, timed from the rebuild's `watchRun`. One per rebuild, however many tabs are open, carrying that rebuild's `compilationHash`. Sent without printing anything, like `vitehmr`. [Example](examples/rspackhmr.json).
 
 To report back, the plugin adds a small runtime module to the bundle, **in watch mode only**: production, one-off and child compilations are untouched. It connects to `ws://<page hostname>:<random port>`, so it also works when the dev server runs on a remote machine, as long as that port is reachable. No HMR (`hot: false`) means no `rspackhmr` events; `clientready` still works.
 
@@ -258,7 +258,7 @@ What each event adds to the usual `command` fields:
 | `runner`      | `pnpm`, `nx`                | What ran it                                                                         |
 | `command`     | `pnpm run test:unit`        | Built from the runner and the target                                                |
 | `rootCommand` | `nx run-many -t build,test` | The top-level invocation, for nested `pnpm run` calls and Nx tasks                  |
-| `outcome`     | `cache`                     | `success`, `failure`, `aborted` (signal or exit 130), `cache` (Nx cache hit), `skipped` |
+| `outcome`     | `cache`                     | `success`, `failure`, `aborted` (signal or exit 130, so a script that exits 130 on purpose counts too), `cache` (Nx cache hit), `skipped` |
 | `runId`       | `1481533057…`               | Nx only: one per Nx invocation                                                      |
 | `exitCode`, `signal` |                      | `130` and `SIGINT` for Ctrl-C                                                       |
 
@@ -280,7 +280,9 @@ What is never sent:
 - **No argv, no script bodies, no output.** `command`, `target` and `rootCommand` are built only from the script name, the Nx project and target, the runner and a known Nx verb. `npm_lifecycle_script` and Nx `terminalOutput` are never read. There is no free-text error field.
 - **Nothing from CI.** Both emitters do nothing when `CI` is set, unless `DEVFEEDBACK_CI=true`. The bundler plugins are unchanged.
 
-And what the wrapper does not change: stdio, cwd, exit codes and signals pass straight through, SIGINT/SIGTERM/SIGHUP are forwarded to the script, and under pnpm 12 the wrapper adds back the SIGINT trap pnpm wraps scripts in for `sh`, `bash` and `dash` (pnpm drops it for a custom `scriptShell`), so Ctrl-C behaves exactly as it would without it. Events are handed to a detached process that adds the metadata, spools and delivers them after the script has returned; the wrapper itself never touches the network. It does cost one Node.js process start per `pnpm run`, and loading a pnpmfile has a cost of its own on pnpm 12.
+And what the wrapper does not change: stdio, cwd, exit codes and signals pass straight through, SIGINT/SIGTERM/SIGHUP are forwarded to the script, and on pnpm 11.28.1+ and 12.8.0+ the wrapper adds back the SIGINT trap pnpm wraps Bourne-shell scripts in (pnpm drops it for a custom `scriptShell`), so Ctrl-C behaves exactly as it would without it. A CI job checks this against the newest pnpm. Events are handed to a detached process that adds the metadata, spools and delivers them after the script has returned; the wrapper itself never touches the network. It does cost one Node.js process start per `pnpm run`, and loading a pnpmfile has a cost of its own on pnpm 12, about 100 ms per command, since pnpm starts a worker for it.
+
+In CI nothing is recorded, but pnpm 12 still pays for the pnpmfile worker. To skip it, set `PNPM_CONFIG_IGNORE_PNPMFILE=true` on the CI steps that run scripts, after `pnpm install`. Don't set it for the install itself if your pnpmfile has other hooks.
 
 Known gaps:
 

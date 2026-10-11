@@ -12,7 +12,7 @@ import {
   sendBuildData,
   sendCommandData,
 } from 'agoda-devfeedback-common';
-import { clientRuntimeSource } from './rspack-client-runtime.js';
+import { clientRuntimeSource } from './rspack-client-runtime';
 import type {
   CommandBuildData,
   RspackBuildData,

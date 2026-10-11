@@ -7,6 +7,7 @@ import {
   exitStatus,
   finishScript,
   planScript,
+  pnpmAddsSigintTrap,
   realShellArgs,
   scriptOutcome,
 } from './script-shell';
@@ -152,22 +153,42 @@ describe('script-shell', () => {
   describe('realShellArgs', () => {
     const pnpm12 = { npm_config_user_agent: 'pnpm/12.10.1 npm/? node/? linux x64' };
 
-    it.each(['/bin/sh', '/bin/bash', '/usr/bin/dash'])(
-      'adds pnpm 12 SIGINT trap back for %s',
-      (shell) => {
-        expect(realShellArgs(['-c', 'echo hi'], shell, pnpm12)).toEqual([
-          '-c',
-          `${PNPM_SIGINT_TRAP}echo hi`,
-        ]);
-      },
-    );
+    it.each([
+      '/bin/sh',
+      '/bin/bash',
+      '/usr/bin/dash',
+      '/bin/ash',
+      '/bin/zsh',
+      '/bin/ksh',
+      '/bin/mksh',
+    ])('adds pnpm SIGINT trap back for %s', (shell) => {
+      expect(realShellArgs(['-c', 'echo hi'], shell, pnpm12)).toEqual([
+        '-c',
+        `${PNPM_SIGINT_TRAP}echo hi`,
+      ]);
+    });
+
+    it.each([
+      ['10.34.6', false],
+      ['11.28.0', false],
+      ['11.28.1', true],
+      ['11.29.0', true],
+      ['12.7.0', false],
+      ['12.8.0', true],
+      ['12.10.1', true],
+      ['13.0.0', true],
+      [undefined, false],
+      ['next', false],
+    ])('pnpm %s adds the trap: %s', (version, expected) => {
+      expect(pnpmAddsSigintTrap(version)).toBe(expected);
+    });
 
     it.each([
       [
-        'pnpm 10',
+        'pnpm 12.7',
         ['-c', 'echo hi'],
         '/bin/sh',
-        { npm_config_user_agent: 'pnpm/10.18.0 npm/? node/v22 linux x64' },
+        { npm_config_user_agent: 'pnpm/12.7.0 npm/? node/v22 linux x64' },
       ],
       [
         'npm',
@@ -175,7 +196,7 @@ describe('script-shell', () => {
         '/bin/sh',
         { npm_config_user_agent: 'npm/10.9.2 node/v22 linux x64' },
       ],
-      ['an unverified shell', ['-c', 'echo hi'], '/bin/zsh', pnpm12],
+      ['a non-Bourne shell', ['-c', 'echo hi'], '/usr/bin/fish', pnpm12],
       ['anything but -c <body>', ['-e', '-c', 'echo hi'], '/bin/sh', pnpm12],
       [
         'a body that already has it',

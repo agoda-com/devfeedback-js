@@ -12,6 +12,7 @@ Record package scripts and task-runner tasks as `command` events.
   records every task, with cache hits reported as `outcome: "cache"`.
 - New optional `CommandBuildData` fields: `outcome`, `runner`, `project`, `target`,
   `rootCommand`, `runId`; new `CommandPhase` value `other` for unmapped names.
-- Per-repo `devfeedback.phases` / `devfeedback.skip` in the root `package.json`.
+- Per-repo `devfeedback.phases` / `devfeedback.skip` in the root `package.json`. A
+  phase that isn't a known `CommandPhase` is reported as `other`.
 - Neither emitter records anything when `CI` is set, unless `DEVFEEDBACK_CI=true`.
   Script bodies, argv and task output are never sent.
