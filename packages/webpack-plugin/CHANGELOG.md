@@ -1,5 +1,15 @@
 # agoda-devfeedback-webpack
 
+## 2.0.11
+
+### Patch Changes
+
+- Updated dependencies [ea4888e]
+- Updated dependencies [ea4888e]
+- Updated dependencies [ea4888e]
+- Updated dependencies [83413f6]
+  - agoda-devfeedback-common@2.2.0
+
 ## 2.0.10
 
 ### Patch Changes
