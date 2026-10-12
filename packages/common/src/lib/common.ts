@@ -65,6 +65,7 @@ const getEndpointFromType = (type: string) => {
     vitehmr: process.env.VITE_ENDPOINT || 'http://compilation-metrics/vite',
     rsbuild: process.env.RSPACK_ENDPOINT || 'http://compilation-metrics/rspack',
     rspack: process.env.RSPACK_ENDPOINT || 'http://compilation-metrics/rspack',
+    rspackhmr: process.env.RSPACK_ENDPOINT || 'http://compilation-metrics/rspack',
     command: process.env.COMMAND_ENDPOINT || 'http://compilation-metrics/command',
   }[type];
 };
@@ -87,10 +88,18 @@ const sendData = async (endpoint: string, metaData: CommonMetadata): Promise<boo
   return true;
 };
 
+/** HMR happens many times a session; a line for each would bury the developer's own output. */
+const QUIET_TYPES = new Set(['vitehmr', 'rspackhmr']);
+
 export const sendBuildData = async (
   buildStats: RspackBuildData | ViteBuildData | WebpackBuildData,
 ) => {
   const endpoint = getEndpointFromType(buildStats.type);
+
+  if (endpoint && QUIET_TYPES.has(buildStats.type)) {
+    await sendData(endpoint, buildStats);
+    return;
+  }
 
   if (!endpoint) {
     console.log(

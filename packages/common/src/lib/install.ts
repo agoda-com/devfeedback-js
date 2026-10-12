@@ -37,12 +37,14 @@ export const lockfileHash = (root: string): string | undefined => {
  * Every supported package manager sets npm_config_user_agent, e.g.
  * "pnpm/9.0.0 npm/? node/v20.11.0 linux x64".
  */
-export const detectPackageManager = (): {
+export const detectPackageManager = (
+  env: NodeJS.ProcessEnv = process.env,
+): {
   packageManager?: PackageManager;
   packageManagerVersion?: string;
   userAgent: string;
 } => {
-  const userAgent = process.env.npm_config_user_agent ?? '';
+  const userAgent = env.npm_config_user_agent ?? '';
   const [name, version] = userAgent.split(' ')[0]?.split('/') ?? [];
   const known: PackageManager[] = ['npm', 'yarn', 'pnpm'];
   return {

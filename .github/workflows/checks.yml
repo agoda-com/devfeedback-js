@@ -38,6 +38,25 @@ jobs:
       - name: test
         run: pnpm test
 
+  # The script-shell wrapper copies pnpm's SIGINT trap; catch pnpm changing it.
+  pnpm-latest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: setup
+        uses: ./.actions/setup
+        with:
+          cache-key: ci-pnpm-latest
+      - name: install the newest pnpm
+        run: npm install --global --prefix "$RUNNER_TEMP/pnpm-latest" pnpm@latest
+      - name: pnpm SIGINT trap
+        run: pnpm --filter agoda-devfeedback-common exec vitest run src/lib/pnpm-sigint-trap.spec.ts
+        env:
+          PNPM_TRAP_CHECK_BIN: ${{ runner.temp }}/pnpm-latest/bin/pnpm
+
   types:
     runs-on: ubuntu-latest
     steps:

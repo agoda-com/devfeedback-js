@@ -5,6 +5,9 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "devfeedback-shell": "./dist/cli/shell.cjs"
+  },
   "exports": {
     "./package.json": "./package.json",
     ".": {
@@ -13,7 +16,17 @@
       "require": "./dist/index.cjs"
     },
     "./hooks/preinstall": "./dist/hooks/preinstall.cjs",
-    "./hooks/postinstall": "./dist/hooks/postinstall.cjs"
+    "./hooks/postinstall": "./dist/hooks/postinstall.cjs",
+    "./nx": {
+      "types": "./dist/nx.d.ts",
+      "import": "./dist/nx.js",
+      "require": "./dist/nx.cjs"
+    },
+    "./pnpmfile": {
+      "types": "./dist/pnpmfile.d.ts",
+      "import": "./dist/pnpmfile.js",
+      "require": "./dist/pnpmfile.cjs"
+    }
   },
   "files": [
     "dist",
